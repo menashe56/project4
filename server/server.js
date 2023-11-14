@@ -8,20 +8,20 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const pool = mysql.createPool({
-    host: '172.31.17.9', // Use the private IP address of your EC2 instance
-    user: 'myuser',
-    password: 'mypassword',
-    database: 'mydatabase',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-  });
+  host: '172.31.17.9', // Use the private IP address of your EC2 instance
+  user: 'myuser',
+  password: 'mypassword',
+  database: 'mydatabase',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 
 app.use(express.json());
 
 app.get('/api/fetch', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM students');
+    const [rows] = await pool.execute('SELECT * FROM messages');
     res.status(200).json(rows);
   } catch (error) {
     console.error('Error fetching data', error);
@@ -31,10 +31,10 @@ app.get('/api/fetch', async (req, res) => {
 
 app.post('/api/insert', async (req, res) => {
   try {
-    const { first_name, last_name, age, grade } = req.body;
+    const { content } = req.body;
 
-    const query = 'INSERT INTO students (first_name, last_name, age, grade) VALUES (?, ?, ?, ?)';
-    const values = [first_name, last_name, age, grade];
+    const query = 'INSERT INTO messages (content) VALUES (?)';
+    const values = [content];
 
     await pool.execute(query, values);
 
@@ -48,6 +48,5 @@ app.post('/api/insert', async (req, res) => {
 // ... (rest of the code remains the same)
 
 server.listen(80, '0.0.0.0', () => {
-    console.log('Server is running on port 80');
-  });
-  
+  console.log('Server is running on port 80 on ip 13.53.72.114');
+});

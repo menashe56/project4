@@ -8,10 +8,7 @@ export default function App() {
   const [data, setData] = useState([]);
   const [ModalOpen, setModalOpen] = useState(false);
 
-  const [first_name, setFirstName] = useState('');
-  const [last_name, setLastName] = useState('');
-  const [age, setAge] = useState('');
-  const [grade, setGrade] = useState('');
+  const [content, setContent] = useState('');
 
   const handlePrintData = async () => {
     try {
@@ -20,7 +17,7 @@ export default function App() {
       const fetchedData = response.data;
 
       if (fetchedData.length === 0) {
-        // Show an alert if no student is found
+        // Show an alert if no message is found
         Alert.alert('There is no data.');
       } else {
         console.log('Data received:', fetchedData);
@@ -34,15 +31,12 @@ export default function App() {
 
   const handleInsertData = async () => {
     try {
-      const requestData = { first_name, last_name, age, grade };
+      const requestData = { content };
       // Send data to your server's API endpoint over HTTP
       await axios.post('http://13.53.72.114/api/insert', requestData);
       Alert.alert('Data inserted successfully');
       console.log('Data inserted successfully');
-      setFirstName('');
-      setLastName('');
-      setAge('');
-      setGrade('');
+      setContent('');
     } catch (error) {
       console.error('Error inserting data:', error);
     }
@@ -52,11 +46,13 @@ export default function App() {
     <View style={{ marginTop: 80 }}>
       <Button title='Print data' onPress={handlePrintData} />
       <View style={{ marginTop: 40 }}>
-        <TextInput placeholder='First Name' style={styles.input} onChangeText={(text) => setFirstName(text)} value={first_name} />
-        <TextInput placeholder='Last Name' style={styles.input} onChangeText={(text) => setLastName(text)} value={last_name} />
-        <TextInput placeholder='Age' style={styles.input} onChangeText={(text) => setAge(text)} value={age} />
-        <TextInput placeholder='Grade' style={styles.input} onChangeText={(text) => setGrade(text)} value={grade} />
-        <Button title='Add Student' onPress={handleInsertData} />
+        <TextInput
+          placeholder='Content'
+          style={styles.input}
+          onChangeText={(text) => setContent(text)}
+          value={content}
+        />
+        <Button title='Add Message' onPress={handleInsertData} />
       </View>
       <Modal visible={ModalOpen} animationType='slide'>
         <MaterialIcons name='close' size={45} onPress={() => setModalOpen(false)} />
@@ -65,12 +61,8 @@ export default function App() {
             <Text style={{ left: -80, fontSize: 24, fontWeight: 'bold' }}>Data from Database:</Text>
             {data.map((item, index) => (
               <View key={index}>
-                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Student Number {index + 1}:</Text>
-                <Text>First Name: {item.first_name}</Text>
-                <Text>Last Name: {item.last_name}</Text>
-                <Text>Age: {item.age}</Text>
-                <Text>Grade: {item.grade}</Text>
-                <Text style={{ marginBottom: 10 }}>Date of Birth: {item.dob}</Text>
+                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Message Number {index + 1}:</Text>
+                <Text>Content: {item.content}</Text>
               </View>
             ))}
           </View>
