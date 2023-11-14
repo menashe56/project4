@@ -48,5 +48,5 @@ app.post('/api/insert', async (req, res) => {
 // ... (rest of the code remains the same)
 
 server.listen(80, '0.0.0.0', () => {
-  console.log('Server is running on port 80 on ip 13.53.72.114');
+  console.log('Server is running on port 80 on ip 16.171.114.127');
 });
