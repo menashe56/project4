@@ -65,13 +65,18 @@ app.get('/api/fetch', async (req, res) => {
     res.status(200).json(rows);
   } catch (error) {
     console.error('Error fetching data', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 app.post('/api/insert', async (req, res) => {
   try {
     const { content } = req.body;
+
+    // Validate the content before inserting (check if it's not empty, etc.)
+    if (!content) {
+      return res.status(400).json({ error: 'Content is required' });
+    }
 
     const query = 'INSERT INTO messages (content) VALUES (?)';
     const values = [content];
@@ -81,7 +86,7 @@ app.post('/api/insert', async (req, res) => {
     res.status(200).json({ message: 'Data inserted successfully' });
   } catch (error) {
     console.error('Error inserting data:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
