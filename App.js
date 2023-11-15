@@ -53,6 +53,12 @@ export default function App() {
           value={content}
         />
         <Button title='Add Message' onPress={handleInsertData} />
+        {data.map((item, index) => (
+              <View key={index}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Message Number {index + 1}:</Text>
+                <Text>Content: {item.content}</Text>
+              </View>
+            ))}
       </View>
       <Modal visible={ModalOpen} animationType='slide'>
         <MaterialIcons name='close' size={45} onPress={() => setModalOpen(false)} />

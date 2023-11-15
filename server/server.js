@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const mysql = require('mysql2/promise');
+const cors = require('cors'); // Add this line to include the cors middleware
 
 const app = express();
 const server = http.createServer(app);
@@ -16,6 +17,9 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
 });
+
+// Use CORS middleware
+app.use(cors());
 
 app.use(express.json());
 
@@ -48,5 +52,5 @@ app.post('/api/insert', async (req, res) => {
 // ... (rest of the code remains the same)
 
 server.listen(3000, '0.0.0.0', () => {
-  console.log('Server is running on port 80 on ip 13.49.46.202');
+  console.log('Server is running on port 3000 on ip 13.49.46.202');
 });
