@@ -13,7 +13,7 @@ export default function App() {
   const handlePrintData = async () => {
     try {
       // Fetch data from your server's API endpoint over HTTP
-      const response = await axios.get('http://16.171.114.127/api/fetch');
+      const response = await axios.get('http://13.49.46.202/api/fetch');
       const fetchedData = response.data;
 
       if (fetchedData.length === 0) {
@@ -33,7 +33,7 @@ export default function App() {
     try {
       const requestData = { content };
       // Send data to your server's API endpoint over HTTP
-      await axios.post('http://16.171.114.127/api/insert', requestData);
+      await axios.post('http://13.49.46.202/api/insert', requestData);
       Alert.alert('Data inserted successfully');
       console.log('Data inserted successfully');
       setContent('');

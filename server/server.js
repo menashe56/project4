@@ -8,7 +8,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const pool = mysql.createPool({
-  host: '172.31.17.9', // Use the private IP address of your EC2 instance
+  host: '172.31.31.235', // Use the private IP address of your EC2 instance
   user: 'myuser',
   password: 'mypassword',
   database: 'mydatabase',
