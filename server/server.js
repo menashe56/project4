@@ -16,34 +16,49 @@ const logger = winston.createLogger({
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server);
+const io = socketIO(server, { cors: { origin: true, methods: ['GET', 'POST'], credentials: true } });
 
-const pool = mysql.createPool({
-  host: '172.31.31.235',
-  user: 'myuser',
-  password: 'mypassword',
-  database: 'mydatabase',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-// Allow requests from any origin
-app.use(cors({ origin: '*' }));
+// Enable CORS for all routes
+app.use(cors());
 app.use(express.json());
+
+// MySQL configuration
+const pool = mysql.createPool({
+    host: '172.31.31.235',
+    user: 'myuser',
+    password: 'mypassword',
+    database: 'mydatabase',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });  
 
 // Socket.IO communication
 io.on('connection', (socket) => {
-  const clientIP = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
-
+  // Simplified to use the address property directly
+  const clientIP = socket.handshake.address;
+  
   logger.info(`Socket.IO connection established from ${clientIP}`);
+  console.log('WebSocket connection established');
 
   // Enable Socket.IO debugging
-  socket.on('ping', () => logger.debug('Received Socket.IO PING'));
-  socket.on('pong', () => logger.debug('Received Socket.IO PONG'));
-  socket.on('disconnect', () => logger.info('Socket.IO connection closed'));
+  socket.on('ping', () => {
+    console.log('Received Socket.IO PING');
+    logger.debug('Received Socket.IO PING');
+  });
+
+  socket.on('pong', () => {
+    console.log('Received Socket.IO PONG');
+    logger.debug('Received Socket.IO PONG');
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Socket.IO connection closed');
+    logger.info('Socket.IO connection closed');
+  });
 
   socket.on('message', (message) => {
+    console.log(`Received message: ${message}`);
     logger.info(`Received message: ${message}`);
 
     // Process the message and send a response if needed
@@ -100,5 +115,6 @@ app.post('/api/insert', async (req, res) => {
 });
 
 server.listen(3000, '0.0.0.0', () => {
+  console.log('Server is running on port 3000');
   logger.info('Server is running on port 3000');
 });
