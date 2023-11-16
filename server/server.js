@@ -43,7 +43,7 @@ wss.on('connection', (ws) => {
 });
 
 // HTTP endpoint for your Expo app to send messages
-app.post('/api/send-message', (req, res) => {
+app.post('/expo-app/api/send-message', (req, res) => {
   const { message } = req.body;
 
   // Process the message, e.g., store it in a database or send it via WebSocket
@@ -90,6 +90,6 @@ app.post('/api/insert', async (req, res) => {
   }
 });
 
-server.listen(80, '0.0.0.0', () => {
-  console.log('Server is running on port 80 on ip 13.49.46.202');
+server.listen(3000, '0.0.0.0', () => {
+  console.log('Server is running on port 3000 on ip 13.49.46.202');
 });

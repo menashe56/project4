@@ -1,30 +1,31 @@
-import { StatusBar } from 'expo-status-bar';
+import React, { useState, useEffect, useContext } from 'react';
 import { Alert, Button, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import React, { useState, useEffect } from 'react';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
-import { WebSocketProvider, useWebSocket } from 'react-native-websocket';
+import { useWebSocket, WebSocketProvider } from 'react-native-use-websocket';
 
-const WebSocketContext = React.createContext(null);
+const WebSocketContext = React.createContext();
 
-const WebSocketHandler = () => {
-  const { sendMessage } = useWebSocket('ws://13.49.46.202');
+const WebSocketHandler = ({ children }) => {
+  const { sendMessage } = useWebSocket('ws://13.49.46.202/expo-app');
 
   const sendWebSocketMessage = (message) => {
     sendMessage(message);
   };
 
   return (
-    <WebSocketContext.Provider value={{ sendWebSocketMessage }} />
+    <WebSocketContext.Provider value={{ sendWebSocketMessage }}>
+      {children}
+    </WebSocketContext.Provider>
   );
 };
 
 const App = () => {
+  const { sendWebSocketMessage } = useContext(WebSocketContext);
+
   const [data, setData] = useState([]);
   const [ModalOpen, setModalOpen] = useState(false);
   const [content, setContent] = useState('');
-
-  const { sendWebSocketMessage } = React.useContext(WebSocketContext);
 
   const handlePrintData = async () => {
     try {
@@ -47,7 +48,7 @@ const App = () => {
     try {
       const requestData = { content };
       await axios.post('http://13.49.46.202/api/insert', requestData);
-      sendWebSocketMessage('New message added!'); // Notify the server about the new message
+      sendWebSocketMessage('New message added!');
       Alert.alert('Data inserted successfully');
       console.log('Data inserted successfully');
       setContent('');
@@ -57,29 +58,30 @@ const App = () => {
   };
 
   useEffect(() => {
-    // This effect establishes a WebSocket connection
-    const ws = new WebSocket('ws://13.49.46.202');
-
+    const ws = new WebSocket('ws://13.49.46.202/expo-app');
+  
     ws.onopen = () => {
       console.log('WebSocket connection opened');
     };
-
+  
     ws.onmessage = (event) => {
-      // Handle incoming WebSocket messages
       const message = event.data;
       console.log('WebSocket message received:', message);
-      // Handle the incoming message as needed
     };
-
+  
     ws.onclose = () => {
       console.log('WebSocket connection closed');
     };
-
-    // Clean up the WebSocket connection when the component unmounts
+  
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+  
     return () => {
       ws.close();
     };
-  }, []); // Empty dependency array ensures this effect runs once on component mount
+  }, []);
+  
 
   return (
     <View style={{ marginTop: 80 }}>
@@ -143,9 +145,12 @@ const styles = StyleSheet.create({
   },
 });
 
-export default () => (
-  <WebSocketProvider url='ws://13.49.46.202'>
-    <WebSocketHandler />
-    <App />
-  </WebSocketProvider>
-);
+export default function MainApp() {
+  return (
+    <WebSocketProvider url='ws://13.49.46.202/expo-app'>
+      <WebSocketHandler>
+        <App />
+      </WebSocketHandler>
+    </WebSocketProvider>
+  );
+}
