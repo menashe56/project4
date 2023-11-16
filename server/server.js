@@ -7,6 +7,7 @@ const winston = require('winston');
 
 // Configure Winston logger
 const logger = winston.createLogger({
+  level: 'debug',
   transports: [
     new winston.transports.Console(),
     new winston.transports.File({ filename: 'server_logs.log' }),
@@ -32,8 +33,15 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 // WebSocket communication
-wss.on('connection', (ws) => {
-  logger.info('WebSocket connection established');
+wss.on('connection', (ws, req) => {
+  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+
+  logger.info(`WebSocket connection established from ${clientIP}`);
+
+  // Enable WebSocket debugging
+  ws.on('ping', () => logger.debug('Received WebSocket PING'));
+  ws.on('pong', () => logger.debug('Received WebSocket PONG'));
+  ws.on('close', () => logger.info('WebSocket connection closed'));
 
   ws.on('message', (message) => {
     logger.info(`Received message: ${message}`);
@@ -45,10 +53,6 @@ wss.on('connection', (ws) => {
         client.send(`Server: ${message}`);
       }
     });
-  });
-
-  ws.on('close', () => {
-    logger.info('WebSocket connection closed');
   });
 });
 
@@ -104,5 +108,5 @@ app.post('/api/insert', async (req, res) => {
 });
 
 server.listen(3000, '0.0.0.0', () => {
-  logger.info('Server is running on port 3000 on ip 13.49.46.202');
+  logger.info('Server is running on port 3000');
 });
