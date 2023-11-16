@@ -27,7 +27,8 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-app.use(cors());
+// Allow requests from any origin
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 // WebSocket communication
