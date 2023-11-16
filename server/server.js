@@ -51,7 +51,7 @@ app.post('/expo-app/api/send-message', (req, res) => {
 
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(`Server: ${message}`);
+      client.send(JSON.stringify({ message: `Server: ${message}` }));
     }
   });
 

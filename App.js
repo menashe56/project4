@@ -7,10 +7,10 @@ import { useWebSocket, WebSocketProvider } from 'react-native-use-websocket';
 const WebSocketContext = React.createContext();
 
 const WebSocketHandler = ({ children }) => {
-  const { sendMessage } = useWebSocket('ws://13.49.46.202/expo-app');
+  const { sendJsonMessage } = useWebSocket('ws://13.49.46.202/expo-app');
 
   const sendWebSocketMessage = (message) => {
-    sendMessage(message);
+    sendJsonMessage({ message });
   };
 
   return (
@@ -65,7 +65,7 @@ const App = () => {
     };
   
     ws.onmessage = (event) => {
-      const message = event.data;
+      const message = JSON.parse(event.data);
       console.log('WebSocket message received:', message);
     };
   
