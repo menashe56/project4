@@ -3,6 +3,15 @@ const http = require('http');
 const WebSocket = require('ws');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
+const winston = require('winston');
+
+// Configure Winston logger
+const logger = winston.createLogger({
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'server_logs.log' }),
+  ],
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -23,10 +32,10 @@ app.use(express.json());
 
 // WebSocket communication
 wss.on('connection', (ws) => {
-  console.log('Client connected');
+  logger.info('WebSocket connection established');
 
   ws.on('message', (message) => {
-    console.log(`Received message: ${message}`);
+    logger.info(`Received message: ${message}`);
 
     // Process the message and send a response if needed
     // You can broadcast the message to all connected clients if required
@@ -38,7 +47,7 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    console.log('Client disconnected');
+    logger.info('WebSocket connection closed');
   });
 });
 
@@ -55,6 +64,7 @@ app.post('/expo-app/api/send-message', (req, res) => {
     }
   });
 
+  logger.info(`Message sent successfully: ${message}`);
   res.json({ success: true, message: 'Message sent successfully' });
 });
 
@@ -64,7 +74,7 @@ app.get('/api/fetch', async (req, res) => {
     const [rows] = await pool.execute('SELECT * FROM messages');
     res.status(200).json(rows);
   } catch (error) {
-    console.error('Error fetching data', error);
+    logger.error('Error fetching data', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -75,6 +85,7 @@ app.post('/api/insert', async (req, res) => {
 
     // Validate the content before inserting (check if it's not empty, etc.)
     if (!content) {
+      logger.error('Content is required');
       return res.status(400).json({ error: 'Content is required' });
     }
 
@@ -83,13 +94,14 @@ app.post('/api/insert', async (req, res) => {
 
     await pool.execute(query, values);
 
+    logger.info('Data inserted successfully');
     res.status(200).json({ message: 'Data inserted successfully' });
   } catch (error) {
-    console.error('Error inserting data:', error);
+    logger.error('Error inserting data:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 server.listen(3000, '0.0.0.0', () => {
-  console.log('Server is running on port 3000 on ip 13.49.46.202');
+  logger.info('Server is running on port 3000 on ip 13.49.46.202');
 });

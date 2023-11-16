@@ -20,7 +20,7 @@ const WebSocketHandler = ({ children }) => {
   );
 };
 
-const App = () => {
+const MainApp = () => {
   const { sendWebSocketMessage } = useContext(WebSocketContext);
 
   const [data, setData] = useState([]);
@@ -145,11 +145,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function MainApp() {
+export default function App() {
   return (
     <WebSocketProvider url='ws://13.49.46.202/expo-app'>
       <WebSocketHandler>
-        <App />
+        <MainApp />
       </WebSocketHandler>
     </WebSocketProvider>
   );
