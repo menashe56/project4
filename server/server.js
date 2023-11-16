@@ -1,6 +1,6 @@
 const express = require('express');
 const http = require('http');
-const WebSocket = require('ws');
+const socketIO = require('socket.io');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const winston = require('winston');
@@ -16,7 +16,7 @@ const logger = winston.createLogger({
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const io = socketIO(server);
 
 const pool = mysql.createPool({
   host: '172.31.31.235',
@@ -32,27 +32,23 @@ const pool = mysql.createPool({
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// WebSocket communication
-wss.on('connection', (ws, req) => {
-  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+// Socket.IO communication
+io.on('connection', (socket) => {
+  const clientIP = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
 
-  logger.info(`WebSocket connection established from ${clientIP}`);
+  logger.info(`Socket.IO connection established from ${clientIP}`);
 
-  // Enable WebSocket debugging
-  ws.on('ping', () => logger.debug('Received WebSocket PING'));
-  ws.on('pong', () => logger.debug('Received WebSocket PONG'));
-  ws.on('close', () => logger.info('WebSocket connection closed'));
+  // Enable Socket.IO debugging
+  socket.on('ping', () => logger.debug('Received Socket.IO PING'));
+  socket.on('pong', () => logger.debug('Received Socket.IO PONG'));
+  socket.on('disconnect', () => logger.info('Socket.IO connection closed'));
 
-  ws.on('message', (message) => {
+  socket.on('message', (message) => {
     logger.info(`Received message: ${message}`);
 
     // Process the message and send a response if needed
     // You can broadcast the message to all connected clients if required
-    wss.clients.forEach((client) => {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(`Server: ${message}`);
-      }
-    });
+    io.emit('message', `Server: ${message}`);
   });
 });
 
@@ -60,14 +56,10 @@ wss.on('connection', (ws, req) => {
 app.post('/expo-app/api/send-message', (req, res) => {
   const { message } = req.body;
 
-  // Process the message, e.g., store it in a database or send it via WebSocket
+  // Process the message, e.g., store it in a database or send it via Socket.IO
   // Send a response if needed
 
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ message: `Server: ${message}` }));
-    }
-  });
+  io.emit('message', `Server: ${message}`);
 
   logger.info(`Message sent successfully: ${message}`);
   res.json({ success: true, message: 'Message sent successfully' });
