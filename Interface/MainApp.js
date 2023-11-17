@@ -12,7 +12,7 @@ const MainApp = () => {
 
   const handlePrintData = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/fetch');
+      const response = await axios.get('http://13.49.46.202/api/fetch');
       const fetchedData = response.data;
 
       if (fetchedData.length === 0) {
@@ -30,7 +30,7 @@ const MainApp = () => {
   const handleInsertData = async () => {
     try {
       const requestData = { content };
-      await axios.post('http://localhost:3000/api/insert', requestData);
+      await axios.post('http://13.49.46.202/api/insert', requestData);
       socket.emit('newMessage', 'New message added!');
       Alert.alert('Data inserted successfully');
       console.log('Data inserted successfully');
@@ -49,6 +49,23 @@ const MainApp = () => {
       socket.disconnect();
     };
   }, [socket]);
+
+
+  const handlePrintData1 = async () => {
+    try {
+      // Make a simple HTTP GET request to your server
+      const response = await fetch('http://localhost:3000/api/fetch');
+      const data = await response.json();
+  
+      console.log('Data received:', data);
+  
+      // Handle the data as needed
+      // ...
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+  
 
   return (
     <View style={{ marginTop: 80 }}>
