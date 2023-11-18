@@ -2,10 +2,8 @@ import React, { useContext, useState, useEffect } from 'react';
 import { Alert, Button, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
-import { WebSocketContext } from './WebSocketHandler';
 
-const MainApp = () => {
-  const { socket } = useContext(WebSocketContext);
+const MainApp = ({ navigation }) => {
   const [data, setData] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [content, setContent] = useState('');
@@ -31,7 +29,6 @@ const MainApp = () => {
     try {
       const requestData = { content };
       await axios.post('http://13.49.46.202/api/insert', requestData);
-      //socket.emit('newMessage', 'New message added!');
       Alert.alert('Data inserted successfully');
       console.log('Data inserted successfully');
       setContent('');
@@ -39,33 +36,6 @@ const MainApp = () => {
       console.error('Error inserting data:', error);
     }
   };
-{/*
-  useEffect(() => {
-    socket.on('message', (message) => {
-      console.log('Socket.IO message received:', message);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [socket]);
-*/}
-
-  const handlePrintData1 = async () => {
-    try {
-      // Make a simple HTTP GET request to your server
-      const response = await fetch('http://localhost:3000/api/fetch');
-      const data = await response.json();
-  
-      console.log('Data received:', data);
-  
-      // Handle the data as needed
-      // ...
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-  
 
   return (
     <View style={{ marginTop: 80 }}>
@@ -95,7 +65,9 @@ const MainApp = () => {
       </Modal>
     </View>
   );
-};
+}
+
+export default MainApp
 
 const styles = StyleSheet.create({
   container: {
@@ -122,5 +94,3 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 });
-
-export default MainApp;
