@@ -1,9 +1,11 @@
 const express = require('express');
 const http = require('http');
-const socketIO = require('socket.io');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const winston = require('winston');
+
+const app = express();
+const server = http.createServer(app);
 
 // Configure Winston logger
 const logger = winston.createLogger({
@@ -14,67 +16,27 @@ const logger = winston.createLogger({
   ],
 });
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIO(server, { cors: { origin: true, methods: ['GET', 'POST'], credentials: true } });
-
 // Enable CORS for all routes
 app.use(cors());
 app.use(express.json());
 
 // MySQL configuration
 const pool = mysql.createPool({
-    host: '172.31.31.235',
-    user: 'myuser',
-    password: 'mypassword',
-    database: 'mydatabase',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-  });  
-
-// Socket.IO communication
-io.on('connection', (socket) => {
-  // Simplified to use the address property directly
-  const clientIP = socket.handshake.address;
-  
-  logger.info(`Socket.IO connection established from ${clientIP}`);
-  console.log('WebSocket connection established');
-
-  // Enable Socket.IO debugging
-  socket.on('ping', () => {
-    console.log('Received Socket.IO PING');
-    logger.debug('Received Socket.IO PING');
-  });
-
-  socket.on('pong', () => {
-    console.log('Received Socket.IO PONG');
-    logger.debug('Received Socket.IO PONG');
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Socket.IO connection closed');
-    logger.info('Socket.IO connection closed');
-  });
-
-  socket.on('message', (message) => {
-    console.log(`Received message: ${message}`);
-    logger.info(`Received message: ${message}`);
-
-    // Process the message and send a response if needed
-    // You can broadcast the message to all connected clients if required
-    io.emit('message', `Server: ${message}`);
-  });
+  host: '172.31.31.235',
+  user: 'myuser',
+  password: 'mypassword',
+  database: 'mydatabase',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-// HTTP endpoint for your Expo app to send messages
-app.post('/expo-app/api/send-message', (req, res) => {
+// HTTP endpoint for your app to send messages
+app.post('/api/send-message', (req, res) => {
   const { message } = req.body;
 
   // Process the message, e.g., store it in a database or send it via Socket.IO
   // Send a response if needed
-
-  io.emit('message', `Server: ${message}`);
 
   logger.info(`Message sent successfully: ${message}`);
   res.json({ success: true, message: 'Message sent successfully' });
@@ -114,7 +76,12 @@ app.post('/api/insert', async (req, res) => {
   }
 });
 
-server.listen(3000, '0.0.0.0', () => {
-  console.log('Server is running on port 3000');
-  logger.info('Server is running on port 3000');
+server.listen(3000, '0.0.0.0', (error) => {
+  if (error) {
+    console.error('Error starting server:', error);
+    logger.error('Error starting server:', error);
+  } else {
+    console.log('Server is running on port 3000');
+    logger.info('Server is running on port 3000');
+  }
 });

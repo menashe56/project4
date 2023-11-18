@@ -31,7 +31,7 @@ const MainApp = () => {
     try {
       const requestData = { content };
       await axios.post('http://13.49.46.202/api/insert', requestData);
-      socket.emit('newMessage', 'New message added!');
+      //socket.emit('newMessage', 'New message added!');
       Alert.alert('Data inserted successfully');
       console.log('Data inserted successfully');
       setContent('');
@@ -39,7 +39,7 @@ const MainApp = () => {
       console.error('Error inserting data:', error);
     }
   };
-
+{/*
   useEffect(() => {
     socket.on('message', (message) => {
       console.log('Socket.IO message received:', message);
@@ -49,7 +49,7 @@ const MainApp = () => {
       socket.disconnect();
     };
   }, [socket]);
-
+*/}
 
   const handlePrintData1 = async () => {
     try {
@@ -78,12 +78,6 @@ const MainApp = () => {
           value={content}
         />
         <Button title='Add Message' onPress={handleInsertData} />
-        {data.map((item, index) => (
-          <View key={index}>
-            <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Message Number {index + 1}:</Text>
-            <Text>Content: {item.content}</Text>
-          </View>
-        ))}
       </View>
       <Modal visible={modalOpen} animationType='slide'>
         <MaterialIcons name='close' size={45} onPress={() => setModalOpen(false)} />
