@@ -4,7 +4,6 @@ import { Button, Input } from 'react-native-elements';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 
-
 const Register = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,15 +20,15 @@ const Register = ({ navigation }) => {
         age,
         picture_url: pictureUrl,
       };
-  
-      const response = await axios.post('https://13.49.46.202/api/register', requestData);
-  
+
+      const response = await axios.post('http://13.49.46.202/api/register', requestData);
+
       const data = response.data;
-  
+
       if (data.success) {
         // Registration successful
         console.log('User account created!');
-        navigation.replace('MainApp'); // or navigate to the appropriate screen
+        navigation.replace('Home'); // or navigate to the appropriate screen
       } else {
         // Registration failed
         Alert.alert('Error', data.error || 'Registration failed');
