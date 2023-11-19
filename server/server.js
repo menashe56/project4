@@ -19,7 +19,7 @@ const logger = winston.createLogger({
 
 // Enable CORS for all routes
 const corsOptions = {
-  origin: '*',  // Allow requests from any origin
+  origin: 'http://localhost:19006',  
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 204,
@@ -39,7 +39,11 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-app.get('/check-auth', async (req, res) => {
+app.get('/api/check-auth', async (req, res) => {
+      // Set CORS headers
+      res.header('Access-Control-Allow-Origin', 'http://localhost:19006');  
+      res.header('Access-Control-Allow-Methods', 'POST');
+      res.header('Access-Control-Allow-Headers', 'Content-Type');
   try {
     // Check if the user has a valid session
     const sessionId = req.cookies.sessionId;
@@ -47,7 +51,7 @@ app.get('/check-auth', async (req, res) => {
       return res.json({ success: false });
     }
 
-    const [sessionRows] = await sessionsPool.execute('SELECT * FROM sessions WHERE id = ?', [sessionId]);
+    const [sessionRows] = await pool.execute('SELECT * FROM sessions WHERE id = ?', [sessionId]);
 
     if (sessionRows.length === 0) {
       return res.json({ success: false });
@@ -68,7 +72,13 @@ app.get('/check-auth', async (req, res) => {
   }
 });
 
-app.post('/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
+      // Set CORS headers
+      res.header('Access-Control-Allow-Origin', 'http://localhost:19006');  // Allow requests from any origin
+      res.header('Access-Control-Allow-Methods', 'POST');
+      res.header('Access-Control-Allow-Headers', 'Content-Type');
+      res.header('Access-Control-Allow-Credentials', 'true'); // Allow credentials
+
   try {
     const { email, password } = req.body;
 
@@ -110,43 +120,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.post('/register', async (req, res) => {
-  try {
-    const { name, email, password, age, picture_url } = req.body;
 
-    // Validate name, email, and password
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, error: 'Name, email, and password are required' });
-    }
-
-    // Check if the email is already in use
-    const [existingUserRows] = await pool.execute('SELECT * FROM UserProfile WHERE email = ?', [email]);
-
-    if (existingUserRows.length > 0) {
-      return res.json({ success: false, error: 'Email is already in use' });
-    }
-
-    // Hash the password using bcrypt
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert the new user into the database
-    const [insertUserResult] = await pool.execute(
-      'INSERT INTO UserProfile (email, password_hash, name, age, picture_url) VALUES (?, ?, ?, ?, ?)',
-      [email, hashedPassword, name, age || null, picture_url || null]
-    );
-
-    // Check if the user was inserted successfully
-    if (insertUserResult.affectedRows === 1) {
-      // Registration successful
-      return res.json({ success: true });
-    } else {
-      return res.json({ success: false, error: 'Registration failed' });
-    }
-  } catch (error) {
-    console.error('Error during registration:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
 
 // HTTP endpoint for your app to send messages
 app.post('/api/send-message', (req, res) => {
@@ -169,6 +143,44 @@ app.get('/api/fetch', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+app.post('/api/register', async (req, res) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', '*');  // Allow requests from any origin
+  res.header('Access-Control-Allow-Methods', 'POST');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+try {
+  const { name, email, password, age, picture_url } = req.body;
+
+  // Validate the content before inserting (check if it's not empty, etc.)
+  if (!name || !email || !password) {
+    logger.error('Name, email, and password are required');
+    return res.status(400).json({ error: 'Name, email, and password are required' });
+  }
+
+  const [existingUserRows] = await pool.execute('SELECT * FROM UserProfile WHERE email = ?', [email]);
+
+  if (existingUserRows.length > 0) {
+    logger.error('Email is already in use');
+    return res.status(400).json({ error: 'Email is already in use' });
+  }
+
+  // Hash the password using bcrypt
+const hashedPassword = await bcrypt.hash(password, 10);
+
+// Insert the new user into the database
+await pool.execute(
+'INSERT INTO UserProfile (email, password_hash, name, age, picture_url) VALUES (?, ?, ?, ?, ?)',
+[email, hashedPassword, name, age || '', picture_url || '']
+);
+  logger.info('Data inserted successfully');
+  res.status(200).json({ message: 'Data inserted successfully' });
+} catch (error) {
+  logger.error('Error inserting data:', error);
+  res.status(500).json({ error: 'Internal server error' });
+}
+});
+
 
 app.post('/api/insert', async (req, res) => {
     // Set CORS headers

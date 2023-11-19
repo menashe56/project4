@@ -2,37 +2,41 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, KeyboardAvoidingView, Alert } from 'react-native';
 import { Button, Input } from 'react-native-elements';
 import { StatusBar } from 'expo-status-bar';
+import axios from 'axios';
+
 
 const Register = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [age, setAge] = useState(null);
+  const [age, setAge] = useState('');
   const [pictureUrl, setPictureUrl] = useState('');
 
   const register = async () => {
     try {
-      const response = await fetch('https://13.49.46.202/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password, age, picture_url: pictureUrl }),
-      });
-
-      const data = await response.json();
-
+      const requestData = {
+        name,
+        email,
+        password,
+        age,
+        picture_url: pictureUrl,
+      };
+  
+      const response = await axios.post('https://13.49.46.202/api/register', requestData);
+  
+      const data = response.data;
+  
       if (data.success) {
         // Registration successful
         console.log('User account created!');
-        navigation.replace('Home'); // or navigate to the appropriate screen
+        navigation.replace('MainApp'); // or navigate to the appropriate screen
       } else {
         // Registration failed
         Alert.alert('Error', data.error || 'Registration failed');
       }
     } catch (error) {
       console.error('Error during registration:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert('Error', `An unexpected error occurred: ${error.message || 'Unknown error'}`);
     }
   };
 

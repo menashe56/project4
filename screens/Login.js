@@ -7,14 +7,14 @@ const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  useEffect(() => {
+ // useEffect(() => {
     // Check if the user is already authenticated on component mount
-    checkAuthStatus();
-  }, []);
+  //  checkAuthStatus();
+  //}, []);
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('https://13.49.46.202/check-auth', {
+      const response = await fetch('http://13.49.46.202/api/check-auth', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -36,7 +36,7 @@ const Login = ({ navigation }) => {
   const signIn = async () => {
     try {
       if (email !== '' && password !== '') {
-        const response = await fetch('https://13.49.46.202/login', {
+        const response = await fetch('http://13.49.46.202/api/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ const Login = ({ navigation }) => {
         if (data.success) {
           // Authentication successful
           console.log('Login successful');
-          navigation.replace('Home');
+          navigation.replace('MainApp');
         } else {
           // Authentication failed
           console.error('Login failed:', data.error);
