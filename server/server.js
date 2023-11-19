@@ -219,6 +219,35 @@ app.get('/api/chats', async (req, res) => {
   }
 });
 
+// Add this route for creating a new chat
+app.post('/api/create-chat', async (req, res) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', 'http://localhost:19006');
+  res.header('Access-Control-Allow-Methods', 'POST');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  try {
+    const { chatName } = req.body;
+
+    // Validate the content before inserting (check if it's not empty, etc.)
+    if (!chatName) {
+      logger.error('Chat name is required');
+      return res.status(400).json({ error: 'Chat name is required' });
+    }
+
+    // Insert the new chat into the database
+    const [insertResult] = await pool.execute(
+      'INSERT INTO chats (chat_name) VALUES (?)',
+      [chatName]
+    );
+
+    logger.info('Chat created successfully');
+    res.status(200).json({ success: true, message: 'Chat created successfully' });
+  } catch (error) {
+    logger.error('Error creating chat:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.post('/api/sign-out', async (req, res) => {
   // Set CORS headers
   res.header('Access-Control-Allow-Origin', 'http://localhost:19006');
