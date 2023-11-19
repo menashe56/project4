@@ -21,18 +21,13 @@ const Register = ({ navigation }) => {
         picture_url: pictureUrl,
       };
 
-      const response = await axios.post('http://13.49.46.202/api/register', requestData);
 
-      const data = response.data;
+      await axios.post('http://13.49.46.202/api/register', requestData);
 
-      if (data.success) {
+      console.log('User Data:', requestData); // Log the request data
         // Registration successful
         console.log('User account created!');
         navigation.replace('Home'); // or navigate to the appropriate screen
-      } else {
-        // Registration failed
-        Alert.alert('Error', data.error || 'Registration failed');
-      }
     } catch (error) {
       console.error('Error during registration:', error);
       Alert.alert('Error', `An unexpected error occurred: ${error.message || 'Unknown error'}`);

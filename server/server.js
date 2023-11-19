@@ -5,6 +5,7 @@ const cors = require('cors');
 const winston = require('winston');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid'); // Added for generating unique session ID
+const cookieParser = require('cookie-parser'); // Add this line
 
 const app = express();
 const server = http.createServer(app);
@@ -28,6 +29,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
 
 // MySQL configuration
 const pool = mysql.createPool({
@@ -48,30 +50,41 @@ const generateSessionId = () => {
 app.get('/api/check-auth', async (req, res) => {
   // Set CORS headers
   res.header('Access-Control-Allow-Origin', 'http://localhost:19006');
-  res.header('Access-Control-Allow-Methods', 'POST');
+  res.header('Access-Control-Allow-Methods', 'GET');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   try {
     // Check if the user has a valid session
     const sessionId = req.cookies.sessionId;
     if (!sessionId) {
+      console.log('sessionId is undified - ', sessionId);
       return res.json({ success: false });
     }
 
     const [sessionRows] = await pool.execute('SELECT * FROM sessions WHERE id = ?', [sessionId]);
 
     if (sessionRows.length === 0) {
+      console.log('this is the first login');
       return res.json({ success: false });
     }
 
     // Assuming you have a users table
-    const [userRows] = await pool.execute('SELECT * FROM users WHERE id = ?', [sessionRows[0].user_id]);
+    const [userRows] = await pool.execute('SELECT * FROM UserProfile WHERE user_id = ?', [sessionRows[0].user_id]);
 
     if (userRows.length === 0) {
+      console.log('no found');
       return res.json({ success: false });
     }
-
     // User is authenticated
-    return res.json({ success: true });
+    return res.json({
+     success: true,
+     user: {
+      user_id: userRows[0].user_id,
+      email: userRows[0].email,
+      name: userRows[0].name,
+      age: userRows[0].age,
+      picture_url: userRows[0].picture_url,
+      },
+    });
   } catch (error) {
     console.error('Error checking auth status:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -182,6 +195,54 @@ app.post('/api/register', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+app.get('/api/chats', async (req, res) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', 'http://localhost:19006');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  try {
+    // Fetch the list of chats from your database
+    const [chatsRows] = await pool.execute('SELECT * FROM chats');
+    const chats = chatsRows.map((chat) => ({
+      id: chat.id,
+      data: {
+        chatName: chat.chat_name, // Adjust this based on your database structure
+        // Add other chat data as needed
+      },
+    }));
+
+    res.status(200).json(chats);
+  } catch (error) {
+    logger.error('Error fetching chats:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/sign-out', async (req, res) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', 'http://localhost:19006');
+  res.header('Access-Control-Allow-Methods', 'POST');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Credentials', 'true'); // Allow credentials
+
+  try {
+    // Clear the session by removing the session ID from the sessions table
+    const sessionId = req.cookies.sessionId;
+    if (sessionId) {
+      await pool.execute('DELETE FROM sessions WHERE id = ?', [sessionId]);
+    }
+
+    // Clear the session ID cookie in the response
+    res.clearCookie('sessionId');
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error signing out:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 
 // HTTP endpoint for your app to send messages
 app.post('/api/send-message', (req, res) => {
