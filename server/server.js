@@ -42,6 +42,16 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+// Function to parse JSON string safely
+function parseParticipants(participants) {
+  try {
+    return JSON.parse(participants);
+  } catch (error) {
+    console.error('Error parsing participants:', error);
+    return [];
+  }
+}
+
 // Generate a unique session ID
 const generateSessionId = () => {
   return uuidv4();
@@ -201,9 +211,10 @@ app.get('/api/chats', async (req, res) => {
   res.header('Access-Control-Allow-Origin', 'http://localhost:19006');
   res.header('Access-Control-Allow-Methods', 'GET');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
+
   try {
     // Fetch the list of chats from your database
-    const [chatsRows] = await pool.execute('SELECT * FROM chats');
+    const [chatsRows] = await pool.execute('SELECT * FROM Chat');
     const chats = chatsRows.map((chat) => ({
       id: chat.id,
       data: {
@@ -236,7 +247,7 @@ app.post('/api/create-chat', async (req, res) => {
 
     // Insert the new chat into the database
     const [insertResult] = await pool.execute(
-      'INSERT INTO chats (chat_name) VALUES (?)',
+      'INSERT INTO Chat (chat_name) VALUES (?)',
       [chatName]
     );
 
@@ -244,6 +255,45 @@ app.post('/api/create-chat', async (req, res) => {
     res.status(200).json({ success: true, message: 'Chat created successfully' });
   } catch (error) {
     logger.error('Error creating chat:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/chats/:chatId/messages', async (req, res) => {
+  try {
+    const { chatId } = req.params;
+
+    // Fetch messages for the specified chat from the database
+    const [messages] = await pool.execute('SELECT * FROM messages WHERE chat_id = ? ORDER BY timestamp DESC', [chatId]);
+
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error('Error fetching chat messages:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/chats/:chatId/send-message', async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { userId, message } = req.body;
+
+    // Validate the content before inserting (check if it's not empty, etc.)
+    if (!userId || !message) {
+      logger.error('User ID and message are required');
+      return res.status(400).json({ error: 'User ID and message are required' });
+    }
+
+    // Insert the new message into the database
+    await pool.execute(
+      'INSERT INTO messages (chat_id, user_id, message) VALUES (?, ?, ?)',
+      [chatId, userId, message]
+    );
+
+    logger.info('Message sent successfully');
+    res.status(200).json({ success: true, message: 'Message sent successfully' });
+  } catch (error) {
+    logger.error('Error sending message:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -270,18 +320,6 @@ app.post('/api/sign-out', async (req, res) => {
     console.error('Error signing out:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
-});
-
-
-// HTTP endpoint for your app to send messages
-app.post('/api/send-message', (req, res) => {
-  const { message } = req.body;
-
-  // Process the message, e.g., store it in a database or send it via Socket.IO
-  // Send a response if needed
-
-  logger.info(`Message sent successfully: ${message}`);
-  res.json({ success: true, message: 'Message sent successfully' });
 });
 
 // Existing HTTP endpoints

@@ -9,16 +9,9 @@ const AddChat = ({ navigation }) => {
 
   const createChat = async () => {
     try {
-      // Make a POST request to your server API endpoint for creating a new chat
-      const response = await axios.post('http://13.49.46.202/api/create-chat', {
-        chatName: input,
-      });
-
-      if (response.data.success) {
-        navigation.goBack();
-      } else {
-        console.error('Error creating chat:', response.data.error);
-      }
+        // Make a POST request to your server API endpoint for creating a new chat
+        await axios.post('http://13.49.46.202/api/create-chat', { chatName: input });
+        navigation.navigate("Home");
     } catch (error) {
       console.error('Error creating chat:', error);
     }

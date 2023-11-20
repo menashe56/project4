@@ -1,13 +1,12 @@
 import { StyleSheet, Text, View, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import React, { useLayoutEffect, useState, useEffect } from 'react';
 import { AntDesign, SimpleLineIcons } from "@expo/vector-icons";
-import { Avatar } from 'react-native-elements'; // Import the Avatar component
+import { Avatar } from 'react-native-elements';
 import CustomListItem from "../components/CustomListItem";
 import axios from 'axios';
 
 const Home = ({ navigation }) => {
   const [chats, setChats] = useState([]);
-  const [userAvatar, setUserAvatar] = useState(null); // State to store user avatar URL
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -20,7 +19,7 @@ const Home = ({ navigation }) => {
     };
 
     fetchChats();
-  }, []);
+  }, [navigation]);
 
   const signOutUser = async () => {
     try {
@@ -53,28 +52,30 @@ const Home = ({ navigation }) => {
           marginRight: 20,
         }}>
           <TouchableOpacity activeOpacity={0.5}>
-          <AntDesign name='camerao' size={24} color="black" />
+            <AntDesign name='camerao' size={24} color="black" />
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.5} onPress={() => navigation.navigate("AddChat")}>
-          <SimpleLineIcons name="pencil" size={24} color="black"/>
+            <SimpleLineIcons name="pencil" size={24} color="black"/>
           </TouchableOpacity>
         </View>
       )
     });
   }, [navigation, signOutUser]);
 
-  const enterChat = (id, chatName) => {
+  const enterChat = (id, chatName,user_id) => {
     navigation.navigate('Chat', {
       id,
       chatName,
+      user_id,
     });
   };
 
   return (
     <SafeAreaView>
       <ScrollView style={styles.container}>
-        {chats.map(({ id, chatName }) => (
-          <CustomListItem key={id} id={id} chatName={chatName} enterChat={enterChat} />
+        {chats.length === 0 && <Text>No chats available</Text>}
+        {chats.map(chat => (
+          <CustomListItem key={chat.id} id={chat.id} chatName={chat.data.chatName} enterChat={enterChat} />
         ))}
       </ScrollView>
     </SafeAreaView>
