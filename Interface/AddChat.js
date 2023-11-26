@@ -1,49 +1,77 @@
-import { StyleSheet, Text, View } from 'react-native';
-import React, { useLayoutEffect, useState } from 'react';
+import { StyleSheet, View, Modal as ReactModal, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { Input, Button } from 'react-native-elements';
 import Icon from "react-native-vector-icons/FontAwesome";
-import axios from 'axios'; // Import axios for making HTTP requests
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import axios from 'axios';
+import { connect } from 'react-redux';
+import { Set_isAddChatModalVisible, Set_user_email } from '../Redux/counterSlice';
 
-const AddChat = ({ navigation }) => {
+const AddChat = ({user_email, Set_user_email, isAddChatModalVisible,Set_isAddChatModalVisible}) => {
   const [input, setInput] = useState("");
+  const [chat_image, setChat_image] = useState("");
 
   const createChat = async () => {
     try {
-        // Make a POST request to your server API endpoint for creating a new chat
-        await axios.post('http://13.49.46.202/api/create-chat', { chatName: input });
-        navigation.navigate("Home");
+      await axios.post(`http://${ip}/api/create-chat`, { chatName: input, chat_image: chat_image });
+      close()
     } catch (error) {
       console.error('Error creating chat:', error);
     }
   };
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: "Add a new Chat",
-      headerBackTitle: "Chats",
-    });
-  }, [navigation]);
+  const close = () => {
+      Set_isAddChatModalVisible(false)
+      setInput('')
+      setChat_image('')
+  }
 
   return (
+    <ReactModal transparent visible={isAddChatModalVisible} animationType="slide" >
     <View style={styles.container}>
+    <MaterialIcons name='close' size={45} onPress={close} style={{paddingLeft: 750, paddingBottom: 40}}/>
       <Input
         placeholder='Enter a chat name'
         value={input}
         onChangeText={(text) => setInput(text)}
-        onSubmitEditing={createChat}
         leftIcon={<Icon name='wechat' type="antdesign" size={24} color="black" />}
+      />
+      <Input
+        placeholder='Enter a chat image (optional)'
+        value={chat_image}
+        onChangeText={(text) => setChat_image(text)}
+        onSubmitEditing={createChat}
+        leftIcon={<Icon name='camera' type="antdesign" size={24} color="black" />}
       />
       <Button disabled={!input} title='Create new chat' onPress={createChat} />
     </View>
+    </ReactModal>
   );
 };
 
-export default AddChat
+const windowHeight = Dimensions.get('window').height;
+const windowWidth = Dimensions.get('window').width;
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
     padding: 30,
-    height: "100%"
+    width: windowWidth / 1.5, // Adjust the width as needed
+    alignSelf: 'center', // Center the modal horizontally
+    marginTop: windowHeight / 4, // Adjust the marginTop to position the modal vertically
+    borderRadius: 10,
   },
 });
+
+const mapStateToProps = (state) => ({
+    user_email: state.user_profile.user_email,
+  
+    isAddChatModalVisible: state.Modals.isAddChatModalVisible,
+  });
+  
+  const mapDispatchToProps = {
+    Set_user_email,
+    Set_isAddChatModalVisible
+  };
+  
+  export default connect(mapStateToProps, mapDispatchToProps)(AddChat);

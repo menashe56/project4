@@ -1,46 +1,100 @@
-import { StyleSheet, Text, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { ListItem, Avatar } from 'react-native-elements';
+import { StyleSheet, Text, TouchableOpacity, ImageBackground, View } from 'react-native';
 import axios from 'axios';
+import { connect } from 'react-redux';
 
-const CustomListItem = ({ id, chatName, entarChat }) => {
-  const [chatMessages, setChatMessages] = useState([]);
+const CustomListItem = ({ chat_name, chat_image, ip }) => {
+
+  const [chatQuestions, setchatQuestions] = useState([]);
+  const [chats, setChats] = useState([]);
 
   useEffect(() => {
-    const fetchChatMessages = async () => {
+    const cancelTokenSource = axios.CancelToken.source();
+
+    const fetchChatQuestions = async () => {
       try {
-        const response = await axios.get(`https://13.49.46.202/api/chats/${id}/messages`);
-        const messages = response.data;
-        setChatMessages(messages);
+        const response = await axios.get(`http://${ip}/api/chats/${chat_name}/questions`, {
+          cancelToken: cancelTokenSource.token,
+        });
+
+        const questions = response.data;
+        setchatQuestions(questions);
       } catch (error) {
-        console.error('Error fetching chat messages:', error.message || 'Unknown error');
+        if (axios.isCancel(error)) {
+          console.log('Request canceled:', error.message);
+        } else {
+          console.error('Error fetching chat messages:', error.message || 'Unknown error');
+        }
       }
     };
 
-    fetchChatMessages();
+    fetchChatQuestions();
 
-    // Clean up the subscription or other resources if needed
-
-  }, [id]);
+    return () => {
+      cancelTokenSource.cancel('Component unmounted');
+    };
+  }, [chat_name]);
 
   return (
-    <ListItem onPress={() => entarChat(id, chatName)} key={id} bottomDivider>
-      <Avatar
-        rounded
-        source={{
-          uri: chatMessages?.[0]?.photoURL || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png',
-        }}
-      />
-      <ListItem.Content>
-        <ListItem.Title style={{ fontWeight: '800' }}>{chatName}</ListItem.Title>
-        <ListItem.Subtitle numberOfLines={1} ellipsizeMode="tail">
-          {chatMessages?.[0]?.displayName} : {chatMessages?.[0]?.message}
-        </ListItem.Subtitle>
-      </ListItem.Content>
-    </ListItem>
+
+    <View style={styles.chatItem}>
+        <Text></Text>
+    <View style={styles.chatItemInside}>
+    <ImageBackground source={{ uri: chat_image }} style={styles.chatImage}>
+      <View style={styles.chatTextContainer}>
+      </View>
+    </ImageBackground>
+    </View>
+    </View>
   );
 };
 
-export default CustomListItem;
+const styles = StyleSheet.create({
+  touchable: {
+    borderRadius: 10,
+    overflow: 'hidden',
+    margin: 10,
+    height: 180,
+    width: 180,
+  },
+  chatItem: {
+    height: 280,
+    width: 200,
+    borderRadius: 15, // Add border radius for a rounded appearance
+    overflow: 'hidden', // Hide overflow content
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#171716',
+  },
+  chatItemInside: {
+    height: 185,
+    width: 170,
+    backgroundColor: 'blue',
+    borderRadius: 15, // Add border radius for a rounded appearance
+    marginBottom: 60,
+  },
+  chatNameText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  chatImage: {
+    flex: 1,
+    resizeMode: 'cover', // Ensure the image covers the entire container
+    justifyContent: 'flex-end',
+  },
+  chatTextContainer: {
+    padding: 10,
+    borderBottomLeftRadius: 15,
+    borderBottomRightRadius: 15,
+  },
+});
 
-const styles = StyleSheet.create({});
+const mapStateToProps = (state) => ({
+    ip: state.Other.ip
+  });
+  
+  const mapDispatchToProps = {
+  };
+
+  export default connect(mapStateToProps, mapDispatchToProps)(CustomListItem);

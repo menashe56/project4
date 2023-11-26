@@ -70,7 +70,7 @@ app.get('/api/check-auth', async (req, res) => {
       return res.json({ success: false });
     }
 
-    const [sessionRows] = await pool.execute('SELECT * FROM sessions WHERE id = ?', [sessionId]);
+    const [sessionRows] = await pool.execute('SELECT * FROM Sessions WHERE id = ?', [sessionId]);
 
     if (sessionRows.length === 0) {
       console.log('this is the first login');
@@ -78,7 +78,7 @@ app.get('/api/check-auth', async (req, res) => {
     }
 
     // Assuming you have a users table
-    const [userRows] = await pool.execute('SELECT * FROM UserProfile WHERE user_id = ?', [sessionRows[0].user_id]);
+    const [userRows] = await pool.execute('SELECT * FROM Users WHERE email = ?', [sessionRows[0].email]);
 
     if (userRows.length === 0) {
       console.log('no found');
@@ -88,7 +88,6 @@ app.get('/api/check-auth', async (req, res) => {
     return res.json({
      success: true,
      user: {
-      user_id: userRows[0].user_id,
       email: userRows[0].email,
       name: userRows[0].name,
       age: userRows[0].age,
@@ -117,7 +116,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     // Fetch user from the database based on email
-    const [userRows] = await pool.execute('SELECT * FROM UserProfile WHERE email = ?', [email]);
+    const [userRows] = await pool.execute('SELECT * FROM Users WHERE email = ?', [email]);
 
     if (userRows.length === 0) {
       return res.json({ success: false, error: 'Invalid email or password' });
@@ -136,7 +135,7 @@ app.post('/api/login', async (req, res) => {
     const sessionId = generateSessionId();
 
     // Store the session ID in the sessions table
-    await pool.execute('INSERT INTO sessions (id, user_id) VALUES (?, ?)', [sessionId, user.user_id]);
+    await pool.execute('INSERT INTO Sessions (id, email) VALUES (?, ?)', [sessionId, user.email]);
 
     // Set the session ID as a cookie in the response
     res.cookie('sessionId', sessionId, { httpOnly: true });
@@ -145,7 +144,6 @@ app.post('/api/login', async (req, res) => {
     return res.json({
       success: true,
       user: {
-        user_id: user.user_id,
         email: user.email,
         name: user.name,
         age: user.age,
@@ -173,7 +171,7 @@ app.post('/api/register', async (req, res) => {
     }
 
     // Check if the email is already in use
-    const [existingUserRows] = await pool.execute('SELECT * FROM UserProfile WHERE email = ?', [email]);
+    const [existingUserRows] = await pool.execute('SELECT * FROM Users WHERE email = ?', [email]);
 
     if (existingUserRows.length > 0) {
       logger.error('Email is already in use');
@@ -185,7 +183,7 @@ app.post('/api/register', async (req, res) => {
 
     // Insert the new user into the database
     const [insertResult] = await pool.execute(
-      'INSERT INTO UserProfile (email, password_hash, name, age, picture_url) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO Users (email, password_hash, name, age, picture_url) VALUES (?, ?, ?, ?, ?)',
       [email, hashedPassword, name, age || '', picture_url || '']
     );
 
@@ -193,7 +191,7 @@ app.post('/api/register', async (req, res) => {
     const sessionId = generateSessionId();
 
     // Store the session ID in the sessions table
-    await pool.execute('INSERT INTO sessions (id, user_id) VALUES (?, ?)', [sessionId, insertResult.insertId]);
+    await pool.execute('INSERT INTO Sessions (id, email) VALUES (?, ?)', [sessionId, insertResult.email]);
 
     // Set the session ID as a cookie in the response
     res.cookie('sessionId', sessionId, { httpOnly: true });
@@ -203,6 +201,18 @@ app.post('/api/register', async (req, res) => {
   } catch (error) {
     logger.error('Error inserting data:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/:email/user', async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const [rows] = await pool.execute('SELECT * FROM Users WHERE email = ?', [email]);
+    res.status(200).json(rows);
+  } catch (error) {
+    logger.error('Error fetching data', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -216,11 +226,9 @@ app.get('/api/chats', async (req, res) => {
     // Fetch the list of chats from your database
     const [chatsRows] = await pool.execute('SELECT * FROM Chat');
     const chats = chatsRows.map((chat) => ({
-      id: chat.id,
-      data: {
-        chatName: chat.chat_name, // Adjust this based on your database structure
-        // Add other chat data as needed
-      },
+      chat_name: chat.chat_name, 
+      chat_image: chat.chat_image,
+      timestamp: chat.created_at,
     }));
 
     res.status(200).json(chats);
@@ -237,18 +245,21 @@ app.post('/api/create-chat', async (req, res) => {
   res.header('Access-Control-Allow-Methods', 'POST');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   try {
-    const { chatName } = req.body;
+    const { chat_name, chat_image } = req.body;
 
     // Validate the content before inserting (check if it's not empty, etc.)
-    if (!chatName) {
+    if (!chat_name) {
       logger.error('Chat name is required');
       return res.status(400).json({ error: 'Chat name is required' });
+    } else if (!chat_image) {
+      logger.error('chat image is required');
+      return res.status(400).json({ error: 'chat image is required' });
     }
 
     // Insert the new chat into the database
     const [insertResult] = await pool.execute(
-      'INSERT INTO Chat (chat_name) VALUES (?)',
-      [chatName]
+      'INSERT INTO Chat (chat_name, chat_image) VALUES (?,?)',
+      [chat_name,chat_image]
     );
 
     logger.info('Chat created successfully');
@@ -259,13 +270,53 @@ app.post('/api/create-chat', async (req, res) => {
   }
 });
 
-app.get('/api/chats/:chatId/messages', async (req, res) => {
+app.get('/api/chats/:chat_name/questions', async (req, res) => {
   try {
-    const { chatId } = req.params;
+    const { chat_name } = req.params;
+
+    // Fetch questions for the specified chat from the database
+    const [questions] = await pool.execute('SELECT * FROM Questions WHERE chat_name = ? ORDER BY timestamp DESC', [chat_name]);
+
+    res.status(200).json(questions);
+  } catch (error) {
+    console.error('Error fetching chat questions:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/chats/:chat_name/send-question', async (req, res) => {
+  try {
+    const { chat_name } = req.params;
+    const { user_email, question } = req.body;
+
+    // Validate the content before inserting (check if it's not empty, etc.)
+    if (!user_email || !question) {
+      logger.error('email and message are required');
+      return res.status(400).json({ error: 'email and message are required' });
+    }
+
+    // Insert the new message into the database
+    await pool.execute(
+      'INSERT INTO Questions (chat_name, email, question) VALUES (?, ?, ?)',
+      [chat_name, user_email, question]
+    );
+
+    logger.info('question sent successfully');
+    res.status(200).json({ success: true, message: 'question sent successfully' });
+  } catch (error) {
+    logger.error('Error sending question:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+app.get('/api/chats/:chat_name/questions/:question_id/messages', async (req, res) => {
+  try {
+    const { chat_name, question_id } = req.params;
 
     // Fetch messages for the specified chat from the database
-    const [messages] = await pool.execute('SELECT * FROM messages WHERE chat_id = ? ORDER BY timestamp DESC', [chatId]);
-
+    const [messages] = await pool.execute('SELECT * FROM Messages WHERE chat_name = ? AND question_id = ? ORDER BY timestamp DESC',[chat_name, question_id]);
+    
     res.status(200).json(messages);
   } catch (error) {
     console.error('Error fetching chat messages:', error);
@@ -273,21 +324,21 @@ app.get('/api/chats/:chatId/messages', async (req, res) => {
   }
 });
 
-app.post('/api/chats/:chatId/send-message', async (req, res) => {
+app.post('/api/chats/:chat_name/questions/:question_id/send-message', async (req, res) => {
   try {
-    const { chatId } = req.params;
-    const { userId, message } = req.body;
+    const { chat_name, question_id } = req.params;
+    const { user_email, message } = req.body;
 
     // Validate the content before inserting (check if it's not empty, etc.)
-    if (!userId || !message) {
-      logger.error('User ID and message are required');
-      return res.status(400).json({ error: 'User ID and message are required' });
+    if (!user_email || !message) {
+      logger.error('user email and message are required');
+      return res.status(400).json({ error: 'user_email and message are required' });
     }
 
     // Insert the new message into the database
     await pool.execute(
-      'INSERT INTO messages (chat_id, user_id, message) VALUES (?, ?, ?)',
-      [chatId, userId, message]
+      'INSERT INTO Messages (chat_name, question_id, user_email, message) VALUES (?, ?, ?, ?)',
+      [chat_name, question_id, user_email, message]
     );
 
     logger.info('Message sent successfully');
@@ -309,7 +360,7 @@ app.post('/api/sign-out', async (req, res) => {
     // Clear the session by removing the session ID from the sessions table
     const sessionId = req.cookies.sessionId;
     if (sessionId) {
-      await pool.execute('DELETE FROM sessions WHERE id = ?', [sessionId]);
+      await pool.execute('DELETE FROM Sessions WHERE id = ?', [sessionId]);
     }
 
     // Clear the session ID cookie in the response

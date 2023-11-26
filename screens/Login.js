@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Button, Input, Image } from 'react-native-elements';
 import { StyleSheet, Text, View, KeyboardAvoidingView, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { connect } from 'react-redux';
+import { Set_user_email, Set_user_name, Set_user_age, Set_user_picture_url  } from '../Redux/counterSlice';
 
-const Login = ({ navigation }) => {
+const Login = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Set_user_picture_url  }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -14,7 +16,7 @@ const Login = ({ navigation }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('http://13.49.46.202/api/check-auth', {
+      const response = await fetch(`http://${ip}/api/check-auth`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -36,7 +38,7 @@ const Login = ({ navigation }) => {
   const signIn = async () => {
     try {
       if (email !== '' && password !== '') {
-        const response = await fetch('http://13.49.46.202/api/login', {
+        const response = await fetch(`http://${ip}/api/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -45,12 +47,22 @@ const Login = ({ navigation }) => {
           credentials: 'include',
         });
 
-        const data = await response.json();
+              // Check the HTTP status code
+      if (!response.ok) {
+        console.error('Login failed:', response.statusText);
+        return;
+      }
 
+        const data = await response.json();
         if (data.success) {
           // Authentication successful
-          console.log('Login successful');
-          navigation.replace('Home');
+          console.log('Login successful',data);
+          Set_user_email(email)
+          Set_user_name(data.name)
+          Set_user_age(data.age)
+          Set_user_picture_url(pictureUrl)
+
+          navigation.replace('Main');
         } else {
           // Authentication failed
           console.error('Login failed:', data.error);
@@ -93,8 +105,6 @@ const Login = ({ navigation }) => {
   );
 };
 
-export default Login;
-
 const styles = StyleSheet.create({
   inputContainer: {
     width: 300,
@@ -111,3 +121,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
 });
+
+const mapStateToProps = (state) => ({
+    ip: state.Other.ip
+  });
+  
+  const mapDispatchToProps = {
+    Set_user_email,
+Set_user_name,
+Set_user_picture_url,
+Set_user_age,
+};
+  
+
+  export default connect(mapStateToProps, mapDispatchToProps)(Login);
