@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 
 const HeaderIn = ({
-  user_pictureUrl, ip,
+  user_picture, ip,
   Set_user_email,
   Set_isAddChatModalVisible,
   isToggleDropdownModalVisible,
@@ -78,7 +78,7 @@ const HeaderIn = ({
             onPress={() => Set_isToggleDropdownModalVisible(true)}
             
           >
-            <Avatar rounded source={{ uri: user_pictureUrl }} />
+            <Avatar rounded source={{ uri: user_picture_url }} />
           </TouchableOpacity>
         </View>
 
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
 
 const mapStateToProps = (state) => ({
   user_email: state.user_profile.user_email,
-  user_pictureUrl: state.user_profile.user_pictureUrl,
+  user_picture_url: state.user_profile.user_picture_url,
   isToggleDropdownModalVisible: state.Modals.isToggleDropdownModalVisible,
 
   ip: state.Other.ip

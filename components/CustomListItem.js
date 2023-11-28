@@ -1,100 +1,134 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, ImageBackground, View } from 'react-native';
+import { StyleSheet, Text, ImageBackground, View, Image} from 'react-native';
 import axios from 'axios';
 import { connect } from 'react-redux';
+import ImageColors from 'react-native-image-colors';
 
 const CustomListItem = ({ chat_name, chat_image, ip }) => {
-
-  const [chatQuestions, setchatQuestions] = useState([]);
-  const [chats, setChats] = useState([]);
+  const [chatQuestions, setChatQuestions] = useState([]);
+  const [dominantColor, setDominantColor] = useState(null);
 
   useEffect(() => {
-    const cancelTokenSource = axios.CancelToken.source();
 
     const fetchChatQuestions = async () => {
       try {
         const response = await axios.get(`http://${ip}/api/chats/${chat_name}/questions`, {
-          cancelToken: cancelTokenSource.token,
         });
 
         const questions = response.data;
-        setchatQuestions(questions);
+        setChatQuestions(questions);
+
       } catch (error) {
-        if (axios.isCancel(error)) {
-          console.log('Request canceled:', error.message);
-        } else {
-          console.error('Error fetching chat messages:', error.message || 'Unknown error');
-        }
+        console.error('Error fetching chat questions:', error.message);
       }
     };
 
     fetchChatQuestions();
 
-    return () => {
-      cancelTokenSource.cancel('Component unmounted');
-    };
   }, [chat_name]);
 
-  return (
+useEffect(() => {
+    const getColorFromImage = async () => {
+      try {
+        const result = await ImageColors.getColors(chat_image, {
+          fallback: '#000000', // Default color if extraction fails
+          quality: 'high',
+          numberOfColors: 3,
+        });
+        console.log(chat_name,' : ' ,result)
+        setDominantColor(result.lightVibrant);
+      } catch (error) {
+        console.error('Error extracting colors:', error);
+      }
+    };
 
+    getColorFromImage();
+  }, [chat_image]);
+
+  return (
     <View style={styles.chatItem}>
-        <Text></Text>
-    <View style={styles.chatItemInside}>
-    <ImageBackground source={{ uri: chat_image }} style={styles.chatImage}>
-      <View style={styles.chatTextContainer}>
+      <View style={styles.chatItemInside}>
+        <ImageBackground source={{ uri: chat_image }} style={styles.chatImage}>
+          <View style={styles.chatTextContainer}>
+            <View style={[styles.rectangleTop, dominantColor && { backgroundColor: dominantColor }]}></View>
+            <Text style={styles.overlayName}>{chat_name}</Text>
+          </View>
+          <View style={[styles.rectangleBottom, dominantColor && { backgroundColor: dominantColor }]}></View>
+        </ImageBackground>
       </View>
-    </ImageBackground>
-    </View>
+      <Text style={styles.chat_name}>{chat_name}</Text>
+      <Text style={styles.chat_question}>{chatQuestions[0]?.question_content}</Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  touchable: {
-    borderRadius: 10,
-    overflow: 'hidden',
-    margin: 10,
-    height: 180,
-    width: 180,
-  },
   chatItem: {
-    height: 280,
-    width: 200,
+    height: 260,
+    width: 190,
     borderRadius: 15, // Add border radius for a rounded appearance
     overflow: 'hidden', // Hide overflow content
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#171716',
   },
   chatItemInside: {
-    height: 185,
-    width: 170,
+    height: 160,
+    width: 160,
     backgroundColor: 'blue',
     borderRadius: 15, // Add border radius for a rounded appearance
-    marginBottom: 60,
-  },
-  chatNameText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    marginTop: 15,
+    marginLeft: 15,
+    marginBottom: 10,
   },
   chatImage: {
-    flex: 1,
-    resizeMode: 'cover', // Ensure the image covers the entire container
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+    borderRadius: 10, // Adjust the value based on your preference
+    overflow: 'hidden', // This ensures that the borderRadius is applied
     justifyContent: 'flex-end',
   },
+  chat_name: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginLeft: 15,
+  },
+  chat_question: {
+    color: 'grey',
+    fontSize: 14,
+    marginLeft: 15,
+    marginTop: 10
+  },
+  rectangleBottom: {
+    height: 7,
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  rectangleTop: {
+    height: 25,
+    width: 7,
+    right: 'auto',
+    position: 'absolute',
+    left: 0,
+  },
   chatTextContainer: {
-    padding: 10,
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
+    marginBottom: 20,
+  },
+  overlayName: {
+    marginLeft: 20,
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
 });
 
 const mapStateToProps = (state) => ({
-    ip: state.Other.ip
-  });
-  
-  const mapDispatchToProps = {
-  };
+  ip: state.Other.ip,
+});
 
-  export default connect(mapStateToProps, mapDispatchToProps)(CustomListItem);
+const mapDispatchToProps = {};
+
+export default connect(mapStateToProps, mapDispatchToProps)(CustomListItem);

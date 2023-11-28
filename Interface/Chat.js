@@ -1,125 +1,136 @@
-import { StyleSheet, Text, View, TouchableOpacity, KeyboardAvoidingView, Platform, TextInput, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import React, { useLayoutEffect, useState, useEffect } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, KeyboardAvoidingView, Platform, TextInput, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Avatar } from 'react-native-elements';
 import { AntDesign, FontAwesome, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
+import { connect } from 'react-redux';
 
-const Chat = ({ navigation, route }) => {
+import {  } from '../Redux/counterSlice';
+import ListMessages from '../components/ListMessages';
+
+const Chat = ({
+  navigation,
+  route,
+  ip,
+  user_picture_url,
+  user_email,
+  user_name,
+  user_age,
+}) => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
-  const user_email = route.params.user_email
-  const user_name = route.params.user_name
-  const user_pictureUrl = route.params.picture_url
-
-
-  const fetchMessages = async () => {
-    try {
-      const response = await axios.get(`http://${ip}/api/chats/${route.params.id}/messages`);
-      setMessages(response.data);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    }
-  };
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredMessages, setFilteredMessages] = useState([]);
 
   useEffect(() => {
-    const fetch_Messages = fetchMessages(); // Call the function here
-    return () => {
-      // Cleanup logic if needed
-      fetch_Messages();
-    };
-  }, [navigation]); // Run only when route changes
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: "Chat",
-      headerBackTitleVisible: false,
-      headerTitleAlign: "left",
-      headerTitle: () => (
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Avatar rounded source={{ uri: messages[0]?.photoURL || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png" }} />
-          <View style={{ marginLeft: 10 }}>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>{route.params.chatName}</Text>
-          </View>
-        </View>
-      ),
-      headerLeft: () => (
-        <TouchableOpacity style={{ marginLeft: 10 }} onPress={() => navigation.navigate("Home", {user_email, user_name, user_pictureUrl,})}>
-          <AntDesign name='arrowleft' size={24} color='white' />
-        </TouchableOpacity>
-      ),
-      headerRight: () => (
-        <View style={{ flexDirection: "row", justifyContent: "space-between", width: 80, marginRight: 20 }}>
-          <TouchableOpacity>
-            <FontAwesome name='video-camera' size={24} color='white' />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Ionicons name="call" size={24} color='white' />
-          </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [navigation, messages]);
+    const fetchMessages = async () => {
+        try {
+          const response = await axios.get(`http://${ip}/api/chats/${route.params.chat_name}/questions/${route.params.question_id}/messages`);
+          setMessages(response.data);
+        } catch (error) {
+          console.error('Error fetching messages:', error);
+        }
+      };
+      if(ip!= '') { fetchMessages(); }
+    
+  }, [navigation, ip]);
+
+  useEffect(() => {
+    const updateFilteredMessages = () => {
+    const filteredMessages = messages.filter((message) =>
+    message.message_content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+      setFilteredMessages(filteredMessages);
+    };
+    updateFilteredMessages();
+  }, [messages, searchQuery]);
 
   const sendMessage = async () => {
     Keyboard.dismiss();
 
     try {
-      await axios.post(`http://${ip}/api/chats/${route.params.id}/send-message`, {
-        chat_id: route.params.id,
-        sender_name: route.params.user_name,
-        message: input,
-        user_email: route.params.user_email,
-        user_pictureUrl: route.params.user_pictureUrl,
+      await axios.post(`http://${ip}/api/chats/${route.params.chat_name}/questions/${route.params.question_id}/send-message`, {
+        sender_name: user_name,
+        message_content: input,
+        sender_email: user_email,
+        sender_photo_url: user_picture_url,
       });
       setInput('');
+      console.log('message sent sucessfuly');
     } catch (error) {
       console.error('Error sending message:', error);
     }
   };
 
+const calculateTimePassed = (timestamp) => {
+
+// Convert the timestamp string to a Date object
+const timestampDate = new Date(timestamp);
+
+// Get the current date and time
+const currentDate = new Date();
+
+// Calculate the time difference in milliseconds
+const timeDifference = currentDate - timestampDate;
+
+// Convert the time difference to seconds, minutes, hours, etc.
+const seconds = Math.floor(timeDifference / 1000);
+const minutes = Math.floor(seconds / 60);
+const hours = Math.floor(minutes / 60);
+const days = Math.floor(hours / 24);
+
+if(days!==0){
+    return days + ' days';
+} else if(hours!==0){
+    return hours + ' hours';
+} else if(minutes!==0){
+    return minutes + ' minutes';
+} else if(seconds!==0){
+    return seconds + ' seconds';
+}}
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+    <SafeAreaView style={styles.container}>
       <StatusBar style='light' />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container} keyboardVerticalOffset={90}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <>
+          <View style={{ backgroundColor: '#0d0c0c', flex: 1 }}>
             <ScrollView contentContainerStyle={{ paddingTop: 15 }}>
-              {messages.map(({ id, data }) => (
-                data.userId === route.params.userId ? (
-                  <View key={id} style={styles.receiver}>
-                    <Avatar position="absolute" rounded bottom={-15} right={-5} size={30} source={{ uri: data.photoURL }} />
-                    <Text style={styles.receiverText}>{data.message}</Text>
-                  </View>
-                ) : (
-                  <View key={id} style={styles.sender}>
-                    <Avatar position="absolute" rounded bottom={-15} right={-5} size={30} source={{ uri: data.photoURL }} />
-                    <Text style={styles.senderText}>{data.message}</Text>
-                    <Text style={styles.senderName}>{data.displayName}</Text>
-                  </View>
-                )
+            <View>
+                <View style={{flexDirection: 'row', marginLeft: 10}}>
+                <Avatar rounded source={{ uri: route.params.sender_photo_url }} />
+                <Text style={styles.questionTitle}>{route.params.question_title}</Text>
+                </View>
+  <Text style={styles.metaInfo}>Asked {calculateTimePassed(route.params.question_timestamp)} ago   Modified {calculateTimePassed(messages[0]?.timestamp)} ago   Viewed {} times</Text>
+  <View style={styles.divider} />
+</View>
+<View>
+<Text style={{color: 'white', fontSize: 16, marginLeft: 15, marginBottom: 25}}>{route.params.question_content}</Text>
+</View>
+              {filteredMessages.map(( message ) => (
+                <View key={message.message_id} style={{marginLeft: 15, marginRight: 15}}>
+                   <ListMessages message={message} calculateTimePassed={calculateTimePassed}/>
+                </View>
               ))}
             </ScrollView>
             <View style={styles.footer}>
-              <TextInput placeholder='Signal Message' style={styles.textInput} value={input} onChangeText={(text) => setInput(text)} onSubmitEditing={sendMessage} />
+              <TextInput placeholder='Send Message' style={styles.textInput} value={input} onChangeText={(text) => setInput(text)} />
               <TouchableOpacity activeOpacity={0.5} onPress={sendMessage}>
                 <Ionicons name="send" size={24} color="#2868E6" />
               </TouchableOpacity>
             </View>
-          </>
-        </TouchableWithoutFeedback>
+          </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
-export default Chat;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#030303',
   },
   footer: {
     flexDirection: "row",
@@ -153,13 +164,14 @@ const styles = StyleSheet.create({
   },
   receiver: {
     padding: 15,
-    backgroundColor: "#ECECEC",
-    alignSelf: "flex-end",
+    backgroundColor: "white",
+    alignSelf: "flex-start",
     borderRadius: 20,
     marginRight: 15,
     marginBottom: 20,
     maxWidth: "80%",
     position: "relative",
+    borderColor: 'gray',
   },
   sender: {
     padding: 15,
@@ -176,4 +188,34 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "white",
   },
+  questionTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'white',
+    marginLeft: 15,
+    paddingBottom: 10,
+  },
+  metaInfo: {
+    color: 'gray',
+    marginLeft: 15,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    marginVertical: 10,
+    marginLeft: 15,
+  },
 });
+
+const mapStateToProps = (state) => ({
+  user_email: state.user_profile.user_email,
+  user_name: state.user_profile.user_name,
+  user_picture_url: state.user_profile.user_picture_url,
+  user_age: state.user_profile.user_age,
+  ip: state.Other.ip,
+});
+
+const mapDispatchToProps = {
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Chat);

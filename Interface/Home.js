@@ -21,6 +21,7 @@ import AddChat from './AddChat';
 import axios from 'axios';
 import { connect } from 'react-redux';
 import { Set_isAddChatModalVisible } from '../Redux/counterSlice';
+import ListMessages from '../components/ListMessages';
 
 const Home = ({
     navigation, route, ip,
@@ -34,7 +35,7 @@ const Home = ({
   const [searchInput, setSearchInput] = useState('');
   const [filteredChats, setFilteredChats] = useState([]);
   const [isDropdownVisible, setDropdownVisible] = useState(false);
-  
+
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   const toggleDropdown = () => {
@@ -50,14 +51,14 @@ const Home = ({
         console.error('Error fetching chats:', error);
       }
     };
-    fetchChats();
+    if(ip!= '') { fetchChats();}
 
-  }, [navigation, ip]);
+  }, [ip]);
 
   useEffect(() => {
     const updateFilteredChats = () => {
       const filteredChats = chats.filter((chat) =>
-        chat.data.chatName.toLowerCase().includes(searchInput.toLowerCase())
+        chat.chat_name.toLowerCase().includes(searchInput.toLowerCase())
       );
       setFilteredChats(filteredChats);
     };
@@ -78,7 +79,7 @@ const Home = ({
   const handleSearchInputChange = (text) => {
     setSearchInput(text);
     const filteredChats = chats.filter((chat) =>
-      chat.data.chatName.toLowerCase().includes(text.toLowerCase())
+      chat.chat_name.toLowerCase().includes(text.toLowerCase())
     );
     setFilteredChats(filteredChats);
   };
@@ -138,8 +139,7 @@ const Home = ({
         <ScrollView contentContainerStyle={styles.scrollViewContent}>
           <View style={styles.chatsContainer}>
             {filteredChats.map((chat) => (
-                    <TouchableOpacity key={chat.chat_name} onPress={() => navigation.navigate('Chat')} style={{marginVertical:20, marginRight: 25}}>
-                        {console.log(chat)}
+                    <TouchableOpacity key={chat.chat_name} onPress={() => navigation.navigate('ChatQuestions', { chat_name: chat.chat_name, chat_image: chat.chat_image })} style={{marginVertical:20, marginRight: 25}}>
                   <CustomListItem chat_name={chat.chat_name} chat_image={chat.chat_image} />
               </TouchableOpacity>
             ))}
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
 const mapStateToProps = (state) => ({
     user_email: state.user_profile.user_email,
     user_name:  state.user_profile.user_name,
-    user_pictureUrl:  state.user_profile.user_pictureUrl,
+    user_picture_url:  state.user_profile.user_picture_url,
 
     isAddChatModalVisible: state.Modals.isAddChatModalVisible,
 

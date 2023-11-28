@@ -3,9 +3,9 @@ import { Button, Input, Image } from 'react-native-elements';
 import { StyleSheet, Text, View, KeyboardAvoidingView, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { connect } from 'react-redux';
-import { Set_user_email, Set_user_name, Set_user_age, Set_user_picture_url  } from '../Redux/counterSlice';
+import { Set_user_email, Set_user_name, Set_user_age, Set_user_picture  } from '../Redux/counterSlice';
 
-const Login = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Set_user_picture_url  }) => {
+const Login = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Set_user_picture  }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -58,9 +58,9 @@ const Login = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Se
           // Authentication successful
           console.log('Login successful',data);
           Set_user_email(email)
-          Set_user_name(data.name)
-          Set_user_age(data.age)
-          Set_user_picture_url(pictureUrl)
+          Set_user_name(data.user.name)
+          Set_user_age(data.user.age)
+          Set_user_picture(data.user.picture)
 
           navigation.replace('Main');
         } else {
@@ -129,7 +129,7 @@ const mapStateToProps = (state) => ({
   const mapDispatchToProps = {
     Set_user_email,
 Set_user_name,
-Set_user_picture_url,
+Set_user_picture,
 Set_user_age,
 };
   

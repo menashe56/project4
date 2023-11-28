@@ -147,7 +147,7 @@ app.post('/api/login', async (req, res) => {
         email: user.email,
         name: user.name,
         age: user.age,
-        picture_url: user.picture_url,
+        picture: user.picture,
       },
     });
   } catch (error) {
@@ -162,12 +162,12 @@ app.post('/api/register', async (req, res) => {
   res.header('Access-Control-Allow-Methods', 'POST');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   try {
-    const { name, email, password, age, picture_url } = req.body;
+    const { name, email, password, age, picture } = req.body;
 
     // Validate the content before inserting (check if it's not empty, etc.)
-    if (!name || !email || !password) {
-      logger.error('Name, email, and password are required');
-      return res.status(400).json({ error: 'Name, email, and password are required' });
+    if (!name || !email || !password || !age) {
+      logger.error('age, Name, email, and password are required');
+      return res.status(400).json({ error: 'age, Name, email, and password are required' });
     }
 
     // Check if the email is already in use
@@ -183,15 +183,15 @@ app.post('/api/register', async (req, res) => {
 
     // Insert the new user into the database
     const [insertResult] = await pool.execute(
-      'INSERT INTO Users (email, password_hash, name, age, picture_url) VALUES (?, ?, ?, ?, ?)',
-      [email, hashedPassword, name, age || '', picture_url || '']
+      'INSERT INTO Users (email, password_hash, name, age, picture) VALUES (?, ?, ?, ?, ?)',
+      [email, hashedPassword, name, age, picture]
     );
 
     // Generate a unique session ID
     const sessionId = generateSessionId();
 
     // Store the session ID in the sessions table
-    await pool.execute('INSERT INTO Sessions (id, email) VALUES (?, ?)', [sessionId, insertResult.email]);
+    //await pool.execute('INSERT INTO Sessions (id, email) VALUES (?, ?)', [sessionId, insertResult.id]);
 
     // Set the session ID as a cookie in the response
     res.cookie('sessionId', sessionId, { httpOnly: true });
@@ -224,12 +224,7 @@ app.get('/api/chats', async (req, res) => {
 
   try {
     // Fetch the list of chats from your database
-    const [chatsRows] = await pool.execute('SELECT * FROM Chat');
-    const chats = chatsRows.map((chat) => ({
-      chat_name: chat.chat_name, 
-      chat_image: chat.chat_image,
-      timestamp: chat.created_at,
-    }));
+    const [chats] = await pool.execute('SELECT * FROM Chats');
 
     res.status(200).json(chats);
   } catch (error) {
@@ -251,19 +246,23 @@ app.post('/api/create-chat', async (req, res) => {
     if (!chat_name) {
       logger.error('Chat name is required');
       return res.status(400).json({ error: 'Chat name is required' });
-    } else if (!chat_image) {
-      logger.error('chat image is required');
-      return res.status(400).json({ error: 'chat image is required' });
     }
 
-    // Insert the new chat into the database
-    const [insertResult] = await pool.execute(
-      'INSERT INTO Chat (chat_name, chat_image) VALUES (?,?)',
-      [chat_name,chat_image]
-    );
+   // Insert the new chat into the database
+   let insertQuery = 'INSERT INTO Chats (chat_name';
+   let values = [chat_name];
 
-    logger.info('Chat created successfully');
-    res.status(200).json({ success: true, message: 'Chat created successfully' });
+   if (chat_image) {
+     insertQuery += ', chat_image';
+     values.push(chat_image);
+   }
+
+   insertQuery += ') VALUES (' + values.map(() => '?').join(',') + ')';
+
+   const [insertResult] = await pool.execute(insertQuery, values);
+
+    logger.info('Chat created successfully : ',insertResult);
+    res.status(200).json({ success: true, message: `Chat created successfully: ${insertResult}` });
   } catch (error) {
     logger.error('Error creating chat:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -275,7 +274,25 @@ app.get('/api/chats/:chat_name/questions', async (req, res) => {
     const { chat_name } = req.params;
 
     // Fetch questions for the specified chat from the database
-    const [questions] = await pool.execute('SELECT * FROM Questions WHERE chat_name = ? ORDER BY timestamp DESC', [chat_name]);
+    const query = `
+    SELECT
+      Questions.*,
+      Users.name AS sender_name,
+      Users.age AS sender_age,
+      Users.picture AS sender_picture
+    FROM
+      Questions
+    LEFT JOIN
+      Messages ON Questions.question_id = Messages.question_id
+    LEFT JOIN
+      Users ON Messages.sender_email = Users.email
+    WHERE
+      Questions.chat_name = ?
+    ORDER BY
+      Questions.timestamp DESC;
+    `;
+
+   const [questions] = await pool.execute(query, [chat_name]);
 
     res.status(200).json(questions);
   } catch (error) {
@@ -287,18 +304,23 @@ app.get('/api/chats/:chat_name/questions', async (req, res) => {
 app.post('/api/chats/:chat_name/send-question', async (req, res) => {
   try {
     const { chat_name } = req.params;
-    const { user_email, question } = req.body;
+    const { sender_email, question, question_title } = req.body;
 
     // Validate the content before inserting (check if it's not empty, etc.)
-    if (!user_email || !question) {
-      logger.error('email and message are required');
-      return res.status(400).json({ error: 'email and message are required' });
+    if (!question) {
+      logger.error('question is empty');
+      return res.status(400).json({ error: 'question is empty' });
+    }
+
+    if (!question_title) {
+      logger.error('question title is empty');
+      return res.status(400).json({ error: 'question title is empty' });
     }
 
     // Insert the new message into the database
     await pool.execute(
-      'INSERT INTO Questions (chat_name, email, question) VALUES (?, ?, ?)',
-      [chat_name, user_email, question]
+      'INSERT INTO Questions (chat_name, sender_email, question_content, question_title) VALUES (?, ?, ?, ?)',
+      [chat_name, sender_email, question, question_title]
     );
 
     logger.info('question sent successfully');
@@ -315,8 +337,24 @@ app.get('/api/chats/:chat_name/questions/:question_id/messages', async (req, res
     const { chat_name, question_id } = req.params;
 
     // Fetch messages for the specified chat from the database
-    const [messages] = await pool.execute('SELECT * FROM Messages WHERE chat_name = ? AND question_id = ? ORDER BY timestamp DESC',[chat_name, question_id]);
-    
+    const query = `
+    SELECT
+      Messages.*,
+      Users.name AS message_sender_name,
+      Users.age AS message_sender_age,
+      Users.picture AS message_sender_picture
+    FROM
+      Messages
+    LEFT JOIN
+      Users ON Messages.sender_email = Users.email
+    WHERE
+      Messages.chat_name = ? AND Messages.question_id = ?
+    ORDER BY
+      Messages.timestamp DESC;
+  `;
+  
+  const [messagesRows] = await pool.execute(query, [chat_name, question_id]);
+  
     res.status(200).json(messages);
   } catch (error) {
     console.error('Error fetching chat messages:', error);
@@ -327,18 +365,18 @@ app.get('/api/chats/:chat_name/questions/:question_id/messages', async (req, res
 app.post('/api/chats/:chat_name/questions/:question_id/send-message', async (req, res) => {
   try {
     const { chat_name, question_id } = req.params;
-    const { user_email, message } = req.body;
+    const { sender_email, message_content } = req.body;
 
     // Validate the content before inserting (check if it's not empty, etc.)
-    if (!user_email || !message) {
-      logger.error('user email and message are required');
-      return res.status(400).json({ error: 'user_email and message are required' });
+    if (!message_content) {
+      logger.error('message is empty');
+      return res.status(400).json({ error: 'message is empty' });
     }
 
     // Insert the new message into the database
     await pool.execute(
-      'INSERT INTO Messages (chat_name, question_id, user_email, message) VALUES (?, ?, ?, ?)',
-      [chat_name, question_id, user_email, message]
+      'INSERT INTO Messages (chat_name, question_id, sender_email, message_content) VALUES (?, ?, ?, ?)',
+      [chat_name, question_id, sender_email, message_content]
     );
 
     logger.info('Message sent successfully');

@@ -4,14 +4,14 @@ import { Button, Input } from 'react-native-elements';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import { connect } from 'react-redux';
-import { Set_user_email, Set_user_name, Set_user_age, Set_user_picture_url } from '../Redux/counterSlice';
+import { Set_user_email, Set_user_name, Set_user_age, Set_user_picture } from '../Redux/counterSlice';
 
-const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Set_user_picture_url }) => {
+const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Set_user_picture }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [age, setAge] = useState('');
-  const [picture_url, setpicture_url] = useState('');
+  const [picture, setpicture] = useState('');
 
   const register = async () => {
     try {
@@ -20,7 +20,7 @@ const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age,
         email,
         password,
         age,
-        picture_url: picture_url || "https://cdn-icons-png.flaticon.com/256/149/149071.png",
+        picture: picture || "https://cdn-icons-png.flaticon.com/256/149/149071.png",
       };
 
 
@@ -32,7 +32,7 @@ const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age,
         Set_user_email(email)
         Set_user_name(name)
         Set_user_age(age)
-        Set_user_picture_url(picture_url || "https://cdn-icons-png.flaticon.com/256/149/149071.png")
+        Set_user_picture(picture || "https://cdn-icons-png.flaticon.com/256/149/149071.png")
         navigation.replace('Main');
     } catch (error) {
       console.error('Error during registration:', error);
@@ -49,7 +49,7 @@ const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age,
         <Input placeholder='Email' autoFocus type="email" value={email} onChangeText={text => setEmail(text)} />
         <Input placeholder='Password' secureTextEntry type="password" value={password} onChangeText={text => setPassword(text)} />
         <Input placeholder='Age' type="number" value={age} onChangeText={text => setAge(text)} />
-        <Input placeholder='Profile Picture URL (optional)' type="text" value={picture_url} onChangeText={text => setpicture_url(text)} onSubmitEditing={register} />
+        <Input placeholder='Profile Picture URL (optional)' type="text" value={picture} onChangeText={text => setpicture(text)} onSubmitEditing={register} />
       </View>
       <Button containerStyle={styles.button} raised title='Register' onPress={register} />
     </KeyboardAvoidingView>
@@ -81,7 +81,7 @@ const mapStateToProps = (state) => ({
   const mapDispatchToProps = {
       Set_user_email,
   Set_user_name,
-  Set_user_picture_url,
+  Set_user_picture,
   Set_user_age,
   };
   

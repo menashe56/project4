@@ -5,15 +5,15 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import { connect } from 'react-redux';
-import { Set_isAddChatModalVisible, Set_user_email } from '../Redux/counterSlice';
+import { Set_isAddChatModalVisible } from '../Redux/counterSlice';
 
-const AddChat = ({user_email, Set_user_email, isAddChatModalVisible,Set_isAddChatModalVisible}) => {
+const AddChat = ({isAddChatModalVisible,Set_isAddChatModalVisible, ip}) => {
   const [input, setInput] = useState("");
   const [chat_image, setChat_image] = useState("");
 
   const createChat = async () => {
     try {
-      await axios.post(`http://${ip}/api/create-chat`, { chatName: input, chat_image: chat_image });
+      await axios.post(`http://${ip}/api/create-chat`, { chat_name: input, chat_image: chat_image });
       close()
     } catch (error) {
       console.error('Error creating chat:', error);
@@ -64,13 +64,12 @@ const styles = StyleSheet.create({
 });
 
 const mapStateToProps = (state) => ({
-    user_email: state.user_profile.user_email,
+    ip: state.Other.ip,
   
     isAddChatModalVisible: state.Modals.isAddChatModalVisible,
   });
   
   const mapDispatchToProps = {
-    Set_user_email,
     Set_isAddChatModalVisible
   };
   

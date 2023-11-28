@@ -8,8 +8,9 @@ import LeftSection from './leftSection';
 import HeaderOut from './HeaderOut';
 import AddChat from './AddChat';
 import { connect } from 'react-redux';
-import { user_email} from '../Redux/counterSlice';
+import { } from '../Redux/counterSlice';
 import HeaderIn from './HeaderIn';
+import ChatQuestions from './ChatQuestions';
 
 const Stack = createStackNavigator();
 
@@ -42,6 +43,7 @@ const Main = ({user_email}) => {
             <Stack.Screen name="Home" component={Home} />
             <Stack.Screen name="HeaderOut" component={HeaderOut} />
             <Stack.Screen name="HeaderIn" component={HeaderIn} />
+            <Stack.Screen name="ChatQuestions" component={ChatQuestions} />
             <Stack.Screen name="Chat" component={Chat} />
           </Stack.Navigator>
         </View>

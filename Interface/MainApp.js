@@ -6,7 +6,7 @@ import Login from '../screens/Login';
 import Register from '../screens/Register';
 import Main from './Main';
 import { connect } from 'react-redux';
-import { Set_ip,ip } from '../Redux/counterSlice';
+import { Set_ip, } from '../Redux/counterSlice';
 
 const Stack = createStackNavigator();
 
@@ -18,7 +18,7 @@ const MainApp = ({Set_ip, ip}) => {
 
   useEffect(() => {
     Set_ip("16.16.28.132");
-    console.log({ip})
+    console.log(ip)
   }, [ip]);
 
   return (

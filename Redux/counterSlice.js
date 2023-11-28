@@ -6,7 +6,7 @@ const userSlice = createSlice({
   initialState: {
     user_email: '',        
     user_name: '',         
-    user_picture_url: '',
+    user_picture: '',
     user_age: 0,
   },
   reducers: {
@@ -16,8 +16,8 @@ const userSlice = createSlice({
     Set_user_name: (state, action) => {
       state.user_name = action.payload;
     },
-    Set_user_picture_url: (state, action) => {
-      state.user_picture_url = action.payload;
+    Set_user_picture: (state, action) => {
+      state.user_picture = action.payload;
     },
     Set_user_age: (state, action) => {
       state.user_age = action.payload;
@@ -57,7 +57,7 @@ const OtherSlice = createSlice({
 export const {
   Set_user_email,
   Set_user_name,
-  Set_user_picture_url,
+  Set_user_picture,
   Set_user_age,
 } = userSlice.actions;
 
