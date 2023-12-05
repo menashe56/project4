@@ -1,28 +1,95 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, KeyboardAvoidingView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, KeyboardAvoidingView, Alert, TouchableOpacity, Image } from 'react-native';
 import { Button, Input } from 'react-native-elements';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import { connect } from 'react-redux';
 import { Set_user_email, Set_user_name, Set_user_age, Set_user_picture } from '../Redux/counterSlice';
+import * as ImagePicker from 'expo-image-picker';
 
 const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Set_user_picture }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [age, setAge] = useState('');
-  const [picture, setpicture] = useState('');
+  const [picture, setpicture] = useState(null);
+  const [loadingImage, setLoadingImage] = useState(false);
+  const [photo, setPhoto] = React.useState(null);
 
-  const register = async () => {
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access media library denied');
+      }
+    })();
+  }, []);
+
+  const handleImagePick = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+  
+      console.log('ImagePicker Result:', result);
+  
+      if (!result.cancelled && result.assets.length > 0) {
+        // Access the URI from the first asset in the array
+        const selectedImage = result.assets[0];
+        console.log('Setting Image:', selectedImage);
+        setpicture(selectedImage);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+    }
+  };
+
+  const handleChoosePhoto = (event) => {
+    const selectedFile = event.target.files[0];
+
+    if (selectedFile) {
+      setPhoto(selectedFile);
+    }
+  };
+
+  const handleUploadPhoto = async () => {
+    try {
+      if (!photo) {
+        console.log('No photo selected');
+        return register("https://cdn-icons-png.flaticon.com/256/149/149071.png");
+      }
+  
+      const formData = new FormData();
+      formData.append('photo', photo);
+  
+      const uploadResponse = await fetch(`http://16.16.28.132/api/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+  
+      const uploadData = await uploadResponse.json();
+      console.log('Upload Response:', uploadData);
+  
+      const imagePath = uploadData.imagePath;
+
+      register(imagePath.split('uploads/')[1])
+    } catch (error) {
+      console.error('Error handling photo upload:', error);
+    }
+  };
+
+  const register = async (picture) => {
     try {
       const requestData = {
         name,
         email,
         password,
         age,
-        picture: picture || "https://cdn-icons-png.flaticon.com/256/149/149071.png",
+        picture: picture,
       };
-
 
       await axios.post(`http://${ip}/api/register`, requestData);
 
@@ -32,7 +99,7 @@ const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age,
         Set_user_email(email)
         Set_user_name(name)
         Set_user_age(age)
-        Set_user_picture(picture || "https://cdn-icons-png.flaticon.com/256/149/149071.png")
+        Set_user_picture(picture)
         navigation.replace('Main');
     } catch (error) {
       console.error('Error during registration:', error);
@@ -49,7 +116,13 @@ const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age,
         <Input placeholder='Email' autoFocus type="email" value={email} onChangeText={text => setEmail(text)} />
         <Input placeholder='Password' secureTextEntry type="password" value={password} onChangeText={text => setPassword(text)} />
         <Input placeholder='Age' type="number" value={age} onChangeText={text => setAge(text)} />
-        <Input placeholder='Profile Picture URL (optional)' type="text" value={picture} onChangeText={text => setpicture(text)} onSubmitEditing={register} />
+        <input type="file" accept="image/*" onChange={handleChoosePhoto} />
+        {photo && (
+          <>
+          <img src={URL.createObjectURL(photo)} alt="Selected" style={{ width: 30, height: 30 }} />
+          <button onClick={handleUploadPhoto}>Upload Photo</button>
+          </>
+        )}
       </View>
       <Button containerStyle={styles.button} raised title='Register' onPress={register} />
     </KeyboardAvoidingView>

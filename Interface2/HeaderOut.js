@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native'
-import React from 'react'
+import React, {useState,useEffect} from 'react'
 import { AntDesign, SimpleLineIcons } from "@expo/vector-icons";
 import { Avatar } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -7,20 +7,28 @@ import { connect } from 'react-redux';
 import {  } from '../Redux/counterSlice';
 import { useNavigation } from '@react-navigation/native';
 
-const HeaderOut = ({}) => {
+const HeaderOut = ({currentRouteName}) => {
+
+  const [backgroundColor, setBackgroundColor] = useState('')
   
   const navigation = useNavigation();
 
+  useEffect(() => {
+    if(currentRouteName=='ChatQuestions'){
+      setBackgroundColor('transparent')
+    } else {
+      setBackgroundColor('#0d0c0c')
+    }
+  }, [navigation,currentRouteName]);
+
   return (
-    <View style={styles.drawerContainer}>
+    <View style={[styles.drawerContainer, {backgroundColor: backgroundColor}]}>
       <View style={{marginRight: 20, flexDirection: 'row', }}>
 
       <TouchableOpacity
           style={{ paddingVertical: 12, paddingRight: 7, paddingLeft: 20}}
           activeOpacity={0.5}
-          onPress={() => {
-            // Handle previous button press
-          }}
+          onPress={() => navigation.goBack()}
         >
           <View style={styles.circularIcon}>
             <AntDesign name="left" size={24} style={{color: '#aeb8b3'}}/>
@@ -56,9 +64,9 @@ const styles = StyleSheet.create({
     drawerContainer : {
       borderRadius: 10,
       borderColor: '#0d0c0c',
-      borderWidth: 1,
+      //borderWidth: 1,
       flex: 1,
-      backgroundColor: '#0d0c0c',
+      //backgroundColor: '#0d0c0c',
       justifyContent: 'center',
       borderBottomRightRadius: 0,
       borderBottomLeftRadius: 0,
@@ -94,6 +102,7 @@ const styles = StyleSheet.create({
 })
 
 const mapStateToProps = (state) => ({
+  currentRouteName: state.Other.currentRouteName,
 });
 
 const mapDispatchToProps = {

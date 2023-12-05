@@ -4,18 +4,14 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import Login from '../screens/Login';
 import Register from '../screens/Register';
+import Main from './Main';
 import { connect } from 'react-redux';
 import { Set_ip, } from '../Redux/counterSlice';
-import Home from './Home';
-import AskQuestion from './AskQuestion';
-import ChatQuestions from './ChatQuestions';
-import Chat from './Chat';
-import { Drawer } from 'expo-router/drawer';
 
 const Stack = createStackNavigator();
 
 const globalScreenOptions = {
-  headerShown: true,
+  headerShown: false,
 };
 
 const MainApp = ({Set_ip, ip}) => {
@@ -28,13 +24,10 @@ const MainApp = ({Set_ip, ip}) => {
   return (
     <View style={styles.body}>
       <NavigationContainer>
-        <Stack.Navigator screenOptions={globalScreenOptions} initialRouteName="Home">
-            <Stack.Screen name="Home" component={Home} />
-            <Stack.Screen name="AskQuestion" component={AskQuestion} />
-            <Stack.Screen name="ChatQuestions" component={ChatQuestions} />
-            <Stack.Screen name="Chat" component={Chat} />          
-            <Stack.Screen name="Login" component={Login} />
-            <Stack.Screen name="Register" component={Register} />
+        <Stack.Navigator screenOptions={globalScreenOptions} initialRouteName="Main">
+          <Stack.Screen name="Main"  component={Main}/>
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Register" component={Register} />
         </Stack.Navigator>
       </NavigationContainer>
     </View>

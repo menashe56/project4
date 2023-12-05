@@ -16,13 +16,13 @@ import {
 import { AntDesign, SimpleLineIcons } from "@expo/vector-icons";
 import { Avatar } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import CustomListItem from "../components/CustomListItem";
+import AddChat from './AddChat';
 import axios from 'axios';
-import ChatList from './ChatList';
 import { connect } from 'react-redux';
 import { Set_isAddChatModalVisible, Set_currentRouteName } from '../Redux/counterSlice';
 import ListMessages from '../components/ListMessages';
 import ImageUploader from '../components/ImageUploader';
-import ChatList2 from './ChatList2';
 
 const Home = ({
     navigation, route, ip, Set_currentRouteName,
@@ -36,7 +36,6 @@ const Home = ({
   const [searchInput, setSearchInput] = useState('');
   const [filteredChats, setFilteredChats] = useState([]);
   const [isDropdownVisible, setDropdownVisible] = useState(false);
-  const [chatTypes, setChatTypes] = useState([])
 
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -49,26 +48,11 @@ const Home = ({
   }, [navigation]);
 
   useEffect(() => {
-    const fetchChatTypes = async () => {
-      try {
-        const response = await axios.get(`http://${ip}/api/chatTypes`);
-        const data = response.data
-        setChatTypes(data);
-        console.log(data)
-      } catch (error) {
-        console.error('Error fetching chats:', error);
-      }
-    };
-    if(ip!= '') { fetchChatTypes();}
-  }, [ip]);
-
-  useEffect(() => {
     const fetchChats = async () => {
       try {
         const response = await axios.get(`http://${ip}/api/chats`);
-        const data = response.data
-        setChats(data);
-        console.log(data)
+        setChats(response.data);
+        console.log(response.data)
       } catch (error) {
         console.error('Error fetching chats:', error);
       }
@@ -104,7 +88,7 @@ const Home = ({
     );
     setFilteredChats(filteredChats);
   };
-{/* 
+
   useLayoutEffect(() => {
     navigation.setOptions({
       title: "Signal",
@@ -114,14 +98,17 @@ const Home = ({
       headerTintColor: "black",
       headerLeft: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 20 }}>
+          {/* Profile Picture */}
           <TouchableOpacity activeOpacity={0.5} onPress={toggleDropdown}>
             <Avatar rounded source={{ uri: user_pictureUrl }} />
           </TouchableOpacity>
 
+          {/* Search Icon */}
           <TouchableOpacity activeOpacity={0.5} onPress={handleSearchIconPress} style={{ marginLeft: 20 }}>
             <SimpleLineIcons name='magnifier' size={24} color="black" />
           </TouchableOpacity>
 
+          {/* Animated Search Input */}
           <Animated.View style={{ marginLeft: 10, transform: [{ translateX: slideAnim }] }}>
             <TextInput
               placeholder="Search"
@@ -134,54 +121,75 @@ const Home = ({
       ),
       headerRight: () => (
         <View style={{ flexDirection: 'row', marginRight: 20 }}>
+          {/* Camera Icon */}
           <TouchableOpacity activeOpacity={0.5} style={{ marginRight: 15 }}>
             <AntDesign name='camerao' size={24} color="white" />
           </TouchableOpacity>
 
+          {/* Pencil Icon */}
           <TouchableOpacity activeOpacity={0.5} onPress={openModal}>
             <SimpleLineIcons name="pencil" size={24} color="white" />
           </TouchableOpacity>
 
+          {/* AddChat Modal */}
           <AddChat visible={isAddChatModalVisible} onClose={closeModal} user_email={user_email} />
         </View>
       )
     });
   }, [navigation, user_picture, isSearchOpen, searchInput, slideAnim]);
 
-*/}
 
-return (
+
+  return (
     <SafeAreaView style={styles.container}>
-        <ScrollView style={{flex:1}}>
         {chats.length === 0 && <Text style={styles.noChatsText}>No chats available</Text>}
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
           <View style={styles.chatsContainer}>
-<View style={[styles.chatsList, {marginBottom: 150}]}>
+          <View style={{flexDirection: 'row', marginTop: 20}}>
+<TouchableOpacity>
+<Text style={{color: 'white', fontSize: 24, fontWeight: 'bold'}}>Technology</Text>
+</TouchableOpacity>
+<TouchableOpacity style={{ position:'absolute', right: 0}}>
+<Text style={{color: 'gray', fontSize: 14, fontWeight: 'bold'}}>Show all</Text>
+</TouchableOpacity>
+</View>
+<View style={styles.chatsList}>
   {filteredChats
-    .slice(1, 4) // Get only the first four chats
+    .filter((chat) => chat.type === 'Technology')
+    .slice(1, 5) // Get only the first four chats
     .map((chat) => (
       <TouchableOpacity
         key={chat.chat_name}
-        style={{width: 300, height: 80, marginRight: 10}}
         onPress={() => navigation.navigate('ChatQuestions', { chat_name: chat.chat_name, chat_image: chat.chat_image })}
+        style={{ marginVertical: 20, marginRight: 25 }}
       >
-        <ChatList chat_name={chat.chat_name} chat_image={chat.chat_image} />
+        <CustomListItem chat_name={chat.chat_name} chat_image={chat.chat_image} />
       </TouchableOpacity>
     ))}
 </View>
+<View style={{flexDirection: 'row', marginTop: 20}}>
+<TouchableOpacity>
+<Text style={{color: 'white', fontSize: 24, fontWeight: 'bold'}}>Home and Lifestyle</Text>
+</TouchableOpacity>
+<TouchableOpacity style={{ position:'absolute', right: 0}}>
+<Text style={{color: 'gray', fontSize: 14, fontWeight: 'bold'}}>Show all</Text>
+</TouchableOpacity>
+</View>
 <View style={styles.chatsList}>
-{chatTypes.map((chatType) => (
-    <View style={{paddingRight: 10}}>
-  <ChatList2
-    key={chatType}
-    chatType={chatType}
-    chats={chats.filter((chat) => chat.type.includes(chatType.type))}
-  />
-  </View>
-))}
-
+  {filteredChats
+    .filter((chat) => chat.type === 'Home and Lifestyle')
+    .slice(0, 4) // Get only the first four chats
+    .map((chat) => (
+      <View
+        key={chat.chat_name}
+        style={{ marginVertical: 20, marginRight: 25 }}
+      >
+        <CustomListItem chat_name={chat.chat_name} chat_image={chat.chat_image} />
+      </View>
+    ))}
 </View>
           </View>
-          </ScrollView>
+        </ScrollView>
     </SafeAreaView>
   );  
 };
@@ -192,6 +200,7 @@ const windowWidth = Dimensions.get('window').width;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#030303',
   },
   leftContainer: {
     flex: 1,
@@ -202,6 +211,12 @@ const styles = StyleSheet.create({
     flex: 3.5,
   },
   drawerContainer: {
+    backgroundColor: '#0d0c0c',
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 10,
+    borderColor: '#0d0c0c',
+    borderWidth: 1,
     width: 285,
   },
   drawerItem: {
@@ -227,12 +242,25 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   chatsContainer: {
-    padding: 5,
+    padding: 10,
+    backgroundColor: '#0d0c0c',
+    paddingVertical: 15,
+    borderBottomRightRadius: 10,
+    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderColor: '#0d0c0c',
+    borderWidth: 1,
     justifyContent: 'center', // Center the items horizontally
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flex:1,
   },
   chatsList: {
     flexDirection: 'row',
-    justifyContent: "center",
+    flexWrap: 'wrap',
+    flex:1
   },
   chatItem: {
     height: 280,

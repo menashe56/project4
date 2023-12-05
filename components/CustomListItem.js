@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, ImageBackground, View, Image} from 'react-native';
+import { StyleSheet, Text, ImageBackground, View, Image, TouchableOpacity} from 'react-native';
 import axios from 'axios';
 import { connect } from 'react-redux';
 import ImageColors from 'react-native-image-colors';
+import { useNavigation } from '@react-navigation/native';
 
 const CustomListItem = ({ chat_name, chat_image, ip }) => {
   const [chatQuestions, setChatQuestions] = useState([]);
   const [dominantColor, setDominantColor] = useState(null);
+  const [chatImage, setChatImage] = useState('');
+  const [loadingImage, setLoadingImage] = useState(false);
+
+  const navigation = useNavigation();
 
   useEffect(() => {
 
@@ -27,10 +32,10 @@ const CustomListItem = ({ chat_name, chat_image, ip }) => {
 
   }, [chat_name]);
 
-useEffect(() => {
+ useEffect(() => {
     const getColorFromImage = async () => {
       try {
-        const result = await ImageColors.getColors(chat_image, {
+        const result = await ImageColors.getColors(chatImage, {
           fallback: '#000000', // Default color if extraction fails
           quality: 'high',
           numberOfColors: 3,
@@ -41,24 +46,49 @@ useEffect(() => {
         console.error('Error extracting colors:', error);
       }
     };
-
     getColorFromImage();
-  }, [chat_image]);
+ }, [chatImage]);
+
+    useEffect(() => {
+
+        const fetchChat = async () => {
+          try {
+            console.log('chat_image : ',chat_image)
+            const response = await axios.get(`http://${ip}/api/getImage/${chat_image}`, {
+            });
+    
+            const data = response.data;
+            setChatImage(`data:image/jpeg;base64,${data.data.base64Image}`);
+    
+          } catch (error) {
+            console.error('Error fetching chat :', error.message);
+          }
+        };
+    
+        fetchChat();
+    
+      }, [chat_image]);
 
   return (
-    <View style={styles.chatItem}>
+    <TouchableOpacity onPress={() => navigation.navigate('ChatQuestions', { chat_name: chat_name, chat_image: chatImage, dominantColor:  dominantColor })}>
+    <View style={styles.chatItem}>{/* data:image/jpeg;base64,/9j/ */}
       <View style={styles.chatItemInside}>
-        <ImageBackground source={{ uri: chat_image }} style={styles.chatImage}>
-          <View style={styles.chatTextContainer}>
+{chatImage &&  <ImageBackground
+    source={{ uri:  chatImage}}
+    style={styles.chatImage}
+  >         
+
+              <View style={styles.chatTextContainer}>
             <View style={[styles.rectangleTop, dominantColor && { backgroundColor: dominantColor }]}></View>
-            <Text style={styles.overlayName}>{chat_name}</Text>
+            <Text style={[styles.overlayName, dominantColor && { color: 'white', textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }]} numberOfLines={1} adjustsFontSizeToFit>{chat_name}</Text>
           </View>
           <View style={[styles.rectangleBottom, dominantColor && { backgroundColor: dominantColor }]}></View>
-        </ImageBackground>
+          </ImageBackground>}
       </View>
       <Text style={styles.chat_name}>{chat_name}</Text>
       <Text style={styles.chat_question}>{chatQuestions[0]?.question_content}</Text>
     </View>
+    </TouchableOpacity>
   );
 };
 
@@ -97,7 +127,7 @@ const styles = StyleSheet.create({
     color: 'grey',
     fontSize: 14,
     marginLeft: 15,
-    marginTop: 10
+    marginTop: 5,
   },
   rectangleBottom: {
     height: 7,

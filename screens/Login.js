@@ -61,7 +61,6 @@ const Login = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Se
           Set_user_name(data.user.name)
           Set_user_age(data.user.age)
           Set_user_picture(data.user.picture)
-
           navigation.replace('Main');
         } else {
           // Authentication failed

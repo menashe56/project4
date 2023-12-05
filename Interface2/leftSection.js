@@ -8,7 +8,7 @@ const LeftSection = ({ user_email }) => {
     return (
     <View style={{flex: 1, flexDirection: 'row'}}>
     <View style={styles.drawerContainer}>
-      <View style={{  backgroundColor: '#0d0c0c', flex: 1, paddingBottom: 15, borderRadius: 10, borderWidth: 1, }}>
+      <View style={{  backgroundColor: 'white', flex: 1, paddingBottom: 15, borderRadius: 10, borderWidth: 1, }}>
         <TouchableOpacity style={styles.drawerItem}>
           <Icon name="home" size={26} color="gray" style={styles.drawerIcon} />
           <Text style={styles.drawerText}>Home: {user_email}</Text>
@@ -51,13 +51,13 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 5,
-    backgroundColor: '#0d0c0c',
+    backgroundColor: 'white',
     paddingVertical: 15,
     borderRadius: 10,
     borderColor: '#0d0c0c',
     borderWidth: 1,
     width: 285,
-    marginTop: 10,
+    marginTop: 5,
   },
   chatsContainer: {
     flexDirection: 'row',

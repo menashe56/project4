@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,12 +16,12 @@ import {
 import { Avatar } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { connect } from 'react-redux';
-import { Set_user_email, Set_isAddChatModalVisible, Set_isToggleDropdownModalVisible } from '../Redux/counterSlice';
+import { Set_user_email, Set_isAddChatModalVisible, Set_isToggleDropdownModalVisible, Set_currentRouteName, } from '../Redux/counterSlice';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 
 const HeaderIn = ({
-  user_picture, ip,
+  user_picture, ip, currentRouteName,
   Set_user_email,
   Set_isAddChatModalVisible,
   isToggleDropdownModalVisible,
@@ -29,18 +29,49 @@ const HeaderIn = ({
 }) => {
   const navigation = useNavigation();
 
+  const [picture, setPicture] = useState('')
+  const [backgroundColor, setBackgroundColor] = useState('')
+
   const signOutUser = async () => {
     try {
       await axios.post(`http://${ip}/api/sign-out`);
       Set_user_email('');
-      navigation.replace('Home');
+      navigation.replace('Home');//fix
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
+  useEffect(() => {
+    if(currentRouteName=='ChatQuestions'){
+      setBackgroundColor('transparent')
+    } else {
+      setBackgroundColor('#0d0c0c')
+    }
+  }, [navigation, currentRouteName]);
+
+  useEffect(() => {
+
+    const fetchUserPicture = async () => {
+      try {
+        const response = await axios.get(`http://${ip}/api/getImage/${user_picture}`, {
+        });
+
+        const data = response.data;
+        setPicture(`data:image/jpeg;base64,${data.data.base64Image}`);
+        console.log(response)
+
+      } catch (error) {
+        console.error('Error fetching chat :', error.message);
+      }
+    };
+
+    fetchUserPicture();
+
+  }, []);
+
   return (
-    <View style={styles.drawerContainer}>
+    <View style={[styles.drawerContainer, {backgroundColor: backgroundColor,}]}>
       <View style={{ marginRight: 20, flexDirection: 'row' }}>
         <TouchableOpacity
           style={{ paddingVertical: 12, paddingRight: 7, paddingLeft: 20}}
@@ -78,7 +109,7 @@ const HeaderIn = ({
             onPress={() => Set_isToggleDropdownModalVisible(true)}
             
           >
-            <Avatar rounded source={{ uri: user_picture_url }} />
+            <Avatar rounded source={{ uri: picture }} />
           </TouchableOpacity>
         </View>
 
@@ -122,9 +153,8 @@ const windowWidth = Dimensions.get('window').width;
 const styles = StyleSheet.create({
   drawerContainer: {
     borderColor: '#0d0c0c',
-    borderWidth: 1,
+    //borderWidth: 1,
     flex: 1,
-    backgroundColor: '#0d0c0c',
     justifyContent: 'center',
     borderBottomRightRadius: 0,
     borderBottomLeftRadius: 0,
@@ -150,10 +180,11 @@ const styles = StyleSheet.create({
 
 const mapStateToProps = (state) => ({
   user_email: state.user_profile.user_email,
-  user_picture_url: state.user_profile.user_picture_url,
+  user_picture: state.user_profile.user_picture,
   isToggleDropdownModalVisible: state.Modals.isToggleDropdownModalVisible,
 
-  ip: state.Other.ip
+  ip: state.Other.ip,
+  currentRouteName: state.Other.currentRouteName,
 });
 
 const mapDispatchToProps = {

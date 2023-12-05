@@ -4,20 +4,14 @@ const mysql = require('mysql2/promise');
 const cors = require('cors');
 const winston = require('winston');
 const bcrypt = require('bcrypt');
-const { v4: uuidv4 } = require('uuid'); // Added for generating unique session ID
-const cookieParser = require('cookie-parser'); // Add this line
+const { v4: uuidv4 } = require('uuid'); // generating unique session ID
+const cookieParser = require('cookie-parser'); 
+const fs = require('fs');
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-
-// Configure Winston logger
-const logger = winston.createLogger({
-  level: 'debug',
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'server_logs.log' }),
-  ],
-});
 
 // Enable CORS for all routes
 const corsOptions = {
@@ -27,9 +21,30 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
+app.use('/uploads', express.static('/root/app/project4-main/server/uploads/'));
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
+
+const storage = multer.diskStorage({
+  destination(req, file, callback) {
+    callback(null, './uploads');
+  },
+  filename(req, file, callback) {
+    callback(null, `${file.fieldname}_${Date.now()}_${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// Configure Winston logger
+const logger = winston.createLogger({
+  level: 'debug',
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'server_logs.log' }),
+  ],
+});
 
 // MySQL configuration
 const pool = mysql.createPool({
@@ -56,6 +71,42 @@ function parseParticipants(participants) {
 const generateSessionId = () => {
   return uuidv4();
 };
+
+app.post('/api/upload', upload.single('photo'), (req, res) => {
+  console.log('file', req.file); // Use req.file to access the uploaded file
+  console.log('body', req.body);
+
+  // If you want to send the file path in the response:
+  const imagePath = req.file ? req.file.path : null;
+
+  res.status(200).json({
+    message: 'success!',
+    imagePath: imagePath,
+  });
+});
+
+app.get('/api/getImage/:chat_image', (req, res) => {
+
+  const { chat_image } = req.params;
+  const imagePath = `/root/app/project4-main/server/uploads/${chat_image}`;
+  
+  console.log('Attempting to send image:', imagePath);
+  
+  // Check if the file exists before attempting to send it
+  if (fs.existsSync(imagePath)) {
+    // Read the image file as a buffer
+    const imageBuffer = fs.readFileSync(imagePath);
+  
+    // Convert the buffer to Base64
+    const base64Image = Buffer.from(imageBuffer).toString('base64');
+  
+    // Send the Base64-encoded image in the response
+    res.json({ status: 1, data: { base64Image }, msg: 'Image sent successfully' });
+  } else {
+    console.error('Image not found:', imagePath);
+    res.status(404).json({ status: 0, data: {}, msg: 'Image not found' });
+  }
+});
 
 app.get('/api/check-auth', async (req, res) => {
   // Set CORS headers
@@ -216,6 +267,23 @@ app.get('/api/:email/user', async (req, res) => {
   }
 });
 
+app.get('/api/chatTypes', async (req, res) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', 'http://localhost:19006');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+
+  try {
+    // Fetch the list of chats from your database
+    const [chatTypes] = await pool.execute('SELECT * FROM chat_types');
+
+    res.status(200).json(chatTypes);
+  } catch (error) {
+    logger.error('Error fetching chat Types:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/chats', async (req, res) => {
   // Set CORS headers
   res.header('Access-Control-Allow-Origin', 'http://localhost:19006');
@@ -248,20 +316,21 @@ app.post('/api/create-chat', async (req, res) => {
       return res.status(400).json({ error: 'Chat name is required' });
     }
 
-   // Insert the new chat into the database
-   let insertQuery = 'INSERT INTO Chats (chat_name';
-   let values = [chat_name];
+    // Insert the new chat into the database
+    let insertQuery = 'INSERT INTO Chats (chat_name';
+    let values = [chat_name];
 
-   if (chat_image) {
-     insertQuery += ', chat_image';
-     values.push(chat_image);
-   }
+    if (chat_image) {
+      // Parse the base64 data URI and extract the actual base64-encoded string
+      insertQuery += ', chat_image';
+      values.push(chat_image);
+    }
 
-   insertQuery += ') VALUES (' + values.map(() => '?').join(',') + ')';
+    insertQuery += ') VALUES (' + values.map(() => '?').join(',') + ')';
 
-   const [insertResult] = await pool.execute(insertQuery, values);
+    const [insertResult] = await pool.execute(insertQuery, values);
 
-    logger.info('Chat created successfully : ',insertResult);
+    logger.info('Chat created successfully: ', insertResult);
     res.status(200).json({ success: true, message: `Chat created successfully: ${insertResult}` });
   } catch (error) {
     logger.error('Error creating chat:', error);
@@ -353,7 +422,7 @@ app.get('/api/chats/:chat_name/questions/:question_id/messages', async (req, res
       Messages.timestamp DESC;
   `;
   
-  const [messagesRows] = await pool.execute(query, [chat_name, question_id]);
+  const [messages] = await pool.execute(query, [chat_name, question_id]);
   
     res.status(200).json(messages);
   } catch (error) {
@@ -366,6 +435,11 @@ app.post('/api/chats/:chat_name/questions/:question_id/send-message', async (req
   try {
     const { chat_name, question_id } = req.params;
     const { sender_email, message_content } = req.body;
+
+    if (!sender_email) {
+      logger.error('User is not Logged in');
+      return res.status(400).json({ error: 'User is not Logged in' });
+    }
 
     // Validate the content before inserting (check if it's not empty, etc.)
     if (!message_content) {
@@ -383,6 +457,102 @@ app.post('/api/chats/:chat_name/questions/:question_id/send-message', async (req
     res.status(200).json({ success: true, message: 'Message sent successfully' });
   } catch (error) {
     logger.error('Error sending message:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/messages/:message_id/user/:user_email/islike', async (req, res) => {
+  try {
+    const { message_id, user_email } = req.params;
+    const islike = await pool.execute('SELECT * FROM likes WHERE user_email = ? AND message_id = ?',[user_email, message_id],);
+
+    if (islike.length > 0) {
+      // User has already liked the message
+      return res.status(200).json({ success: true, islike: true, isdislike: false });
+    }
+
+    const isdislike = await pool.execute('SELECT * FROM dislikes WHERE user_email = ? AND message_id = ?',[user_email, message_id],);
+
+    if (isdislike.length > 0) {
+      // User has disliked the message
+      return res.status(200).json({ success: true, islike: false, isdislike: true });
+    }
+
+    return res.status(200).json({ success: true, islike: false, isdislike: false });
+  } catch (error) {
+    logger.error('Error updating likes:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/messages/:message_id/user/:user_email/likes', async (req, res) => {
+  try {
+    const { message_id, user_email } = req.params;
+    const islike = await pool.execute('SELECT * FROM likes WHERE user_email = ? AND message_id = ?',[user_email, message_id],);
+
+    if (islike.length > 0) {
+      // User has already liked the message
+      return res.status(400).json({ success: false, error: 'User has already liked this message'});
+    }
+
+    const isdislike = await pool.execute('SELECT * FROM dislikes WHERE user_email = ? AND message_id = ?',[user_email, message_id],);
+    if (isdislike.length > 0) {
+      // User has disliked the message
+      await pool.execute('DELETE FROM dislikes WHERE user_email = ? AND message_id = ?', [user_email, message_id]);
+      await pool.execute('UPDATE Messages SET dislikes = likes - 1 WHERE message_id = ?', [message_id]);
+    }
+    // Increment the likes count by 1
+    const UpdateMessages = await pool.execute('UPDATE Messages SET likes = likes + 1 WHERE message_id = ?', [message_id]);
+    const response = await pool.execute('INSERT INTO likes (user_email, message_id) VALUES (?, ?)', [user_email, message_id]);
+
+    logger.info('Likes updated successfully');
+    res.status(200).json({ success: true, message: 'Likes updated successfully', response: response, UpdateMessages: UpdateMessages });
+  } catch (error) {
+    logger.error('Error updating likes:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/messages/:message_id/user/:user_email/dislikes', async (req, res) => {
+  try {
+    const { message_id, user_email } = req.params;
+    const isdislike = await pool.execute('SELECT * FROM dislikes WHERE user_email = ? AND message_id = ?',[user_email, message_id],);
+
+    if (isdislike.length > 0) {
+      // User has already disliked the message
+      return res.status(400).json({ success: false, error: 'User has already disliked this message' });
+    }
+
+    const islike = await pool.execute('SELECT * FROM likes WHERE user_email = ? AND message_id = ?',[user_email, message_id],);
+    if (isdislike.length > 0) {
+      // User has liked the message
+      await pool.execute('DELETE FROM likes WHERE user_email = ? AND message_id = ?', [user_email, message_id]);
+      await pool.execute('UPDATE Messages SET likes = likes - 1 WHERE message_id = ?', [message_id]);
+    }
+    // Increment the dislikes count by 1
+    const UpdateMessages = await pool.execute('UPDATE Messages SET dislikes = likes + 1 WHERE message_id = ?', [message_id]);
+    const response = await pool.execute('INSERT INTO dislikes (user_email, message_id) VALUES (?, ?)', [user_email, message_id]);
+
+    logger.info('disLikes updated successfully');
+    res.status(200).json({ success: true, message: 'Likes updated successfully', response: response, UpdateMessages: UpdateMessages });
+  } catch (error) {
+    logger.error('Error updating dislikes:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+app.put('/api/messages/:message_id/dislikes', async (req, res) => {
+  try {
+    const { message_id } = req.params;
+
+    // Increment the dislikes count by 1
+    const response = await pool.execute('UPDATE Messages SET dislikes = dislikes + 1 WHERE message_id = ?', [message_id]);
+
+    logger.info('disLikes updated successfully');
+    res.status(200).json({ success: true, message: 'disLikes updated successfully', response: response });
+  } catch (error) {
+    logger.error('Error updating dislikes:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

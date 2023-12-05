@@ -6,7 +6,7 @@ const userSlice = createSlice({
   initialState: {
     user_email: '',        
     user_name: '',         
-    user_picture: '',
+    user_picture: null,
     user_age: 0,
   },
   reducers: {
@@ -46,10 +46,18 @@ const OtherSlice = createSlice({
     name: 'Other',
     initialState: {
     ip : '',
+    currentRouteName : '',
+    lighterColor : '',
     },
     reducers: {
       Set_ip: (state, action) => {
         state.ip = action.payload;
+      },
+      Set_currentRouteName: (state, action) => {
+        state.currentRouteName = action.payload;
+      },
+      Set_lighterColor: (state, action) => {
+        state.lighterColor = action.payload;
       },
     },
   });
@@ -63,7 +71,7 @@ export const {
 
 export const { Set_isAddChatModalVisible, Set_isToggleDropdownModalVisible } = ModalsSlice.actions;
 
-export const { Set_ip } = OtherSlice.actions;
+export const { Set_ip, Set_currentRouteName, Set_lighterColor } = OtherSlice.actions;
 
 export const userProfileReducer = userSlice.reducer;
 export const ModalsReducer = ModalsSlice.reducer;
