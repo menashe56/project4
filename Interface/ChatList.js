@@ -5,11 +5,14 @@ import { connect } from 'react-redux';
 import ImageColors from 'react-native-image-colors';
 import { useNavigation } from '@react-navigation/native';
 
-const ChatList = ({ chat_name, chat_image, ip }) => {
+const ChatList = ({ chat, ip }) => {
   const [chatQuestions, setChatQuestions] = useState([]);
   const [dominantColor, setDominantColor] = useState(null);
   const [chatImage, setChatImage] = useState('');
   const [loadingImage, setLoadingImage] = useState(false);
+
+  const chat_name = chat.chat_name;
+  const chat_image = chat.chat_image;
 
   const navigation = useNavigation();
 
@@ -51,7 +54,7 @@ const ChatList = ({ chat_name, chat_image, ip }) => {
 
     useEffect(() => {
 
-        const fetchChat = async () => {
+        const fetchChatImge = async () => {
           try {
             //console.log('chat_image : ',chat_image)
             const response = await axios.get(`http://${ip}/api/getImage/${chat_image}`, {
@@ -65,12 +68,12 @@ const ChatList = ({ chat_name, chat_image, ip }) => {
           }
         };
     
-        fetchChat();
+        fetchChatImge();
     
       }, [chat_image]);
 
       return (
-        <TouchableOpacity onPress={() => navigation.navigate('ChatQuestions', { chat_name: chat_name, chat_image: chatImage, dominantColor:  dominantColor })}>
+        <TouchableOpacity onPress={() => navigation.navigate('Chat', { chat: { chat_name: chat_name, chat_image: chatImage, type: chat.type, timestamp: chat.timestamp }, question: chatQuestions[0] })}>
           <View style={styles.chatItemInside}>
     {chatImage &&  <ImageBackground
         source={{ uri:  chatImage}}

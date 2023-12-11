@@ -1,14 +1,15 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
 import { Avatar } from 'react-native-elements';
 import React, { useEffect, useState } from 'react';
 import { Entypo, AntDesign } from "@expo/vector-icons";
 import axios from 'axios';
 import { connect } from 'react-redux';
 import {  } from '../Redux/counterSlice';
+import GetImage from './GetImage';
 
 const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
 
-    const [islikeAnddislike, setIslikeAnddislike] = useState([message.likes > 0, message.dislikes > 0]);
+    const [islikeAnddislike, setIslikeAnddislike] = useState([false, false]);
     const [isLike, isDislike] = islikeAnddislike;
     console.log(message);
 
@@ -23,8 +24,20 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
         console.error('Failed to update likes');
       }
     } catch (error) {
-      console.error('Error updating likes:', error);
-    }
+        if (error.response && error.response.status == 400) {
+          // Check if the error has a specific name
+          if (error.response.data && error.response.data.errorName === 'User has already liked this message') {
+            console.log('you already liked this message');
+            // You can add additional handling logic here if needed
+          } else {
+            console.error('Bad Request:', error.response.data);
+            // Handle other 400 errors
+          }
+        } else {
+          // Handle other errors
+          console.error('Error updating likes:', error);
+        }
+      }
   };
 
   const updatedisLikes = async () => {
@@ -48,6 +61,7 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
           const response = await axios.put(`http://${ip}/api/messages/${message.message_id}/user/${user_email}/islike`);
           // Check if the update was successful
           const data = response.data
+          console.log(response)
           if (data.islike) {
             setIslikeAnddislike([true, false])
           }else if (data.isdislike) {
@@ -55,18 +69,17 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
           } else {
             setIslikeAnddislike([false, false])
           }
-          console.log(response);
         } catch (error) {
           console.error('Error getting islike:', error);
         }
       };
-      islike();
+      if(user_email!= ''){islike();}else{ setIslikeAnddislike([false, false]) }
   }, [message.likes, message.dislikes]);
 
   return (
     <View style={{ flexDirection: 'row', flex: 1 }}>
       <TouchableOpacity activeOpacity={0.5}>
-        <Avatar rounded source={{ uri: message.message_sender_picture }} />
+      <GetImage Image={message.message_sender_picture} size={25}/>
         {/* Arrow pointing to the user's profile picture */}
       </TouchableOpacity>
       <View style={styles.container}>
@@ -83,7 +96,7 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
             {' '}
             commented on {message.timestamp.substring(0, 9)}{' '}
             {message.timestamp.substring(11, 19)}{' '}
-            ({`${calculateTimePassed(message.timestamp)} ago)`})
+            ({`${calculateTimePassed(message.timestamp)} ago`})
           </Text>
           <TouchableOpacity activeOpacity={0.5} style={{ position: 'absolute', right: 0, marginRight: 5 }}>
             <Entypo name='dots-three-horizontal' size={20} color="gray" />
@@ -93,11 +106,11 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
           {message.message_content}
         </Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, backgroundColor: 'rgba(230, 232, 230,0.5)', width: 100, borderRadius: 20, padding: 5 }}>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={updatedisLikes}>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={user_email!=''? updatedisLikes : () => {Alert.alert('You must log in to vote');}}>
           {isDislike ? <AntDesign name="dislike1" size={24} style={{ marginRight: 5 }} /> : <AntDesign name="dislike2" size={24} style={{ marginRight: 5 }} />}
             <Text>{message.dislikes}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={updateLikes}>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={user_email!=''? updateLikes : () => {Alert.alert('You must log in to vote');}}>
           {isLike ? <AntDesign name="like1" size={24} style={{ marginRight: 5 }} /> : <AntDesign name="like2" size={24} style={{ marginRight: 5 }} />}
             <Text>{message.likes}</Text>
           </TouchableOpacity>

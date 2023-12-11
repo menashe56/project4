@@ -9,9 +9,11 @@ const cookieParser = require('cookie-parser');
 const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
+const WebSocket = require('ws');
 
 const app = express();
 const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
 // Enable CORS for all routes
 const corsOptions = {
@@ -72,6 +74,18 @@ const generateSessionId = () => {
   return uuidv4();
 };
 
+wss.on('connection', (ws) => {
+  console.log('WebSocket connection established');
+
+  ws.on('message', (message) => {
+    console.log('Received message from WebSocket client:', message);
+  });
+
+  ws.on('close', () => {
+    console.log('WebSocket connection closed');
+  });
+});
+
 app.post('/api/upload', upload.single('photo'), (req, res) => {
   console.log('file', req.file); // Use req.file to access the uploaded file
   console.log('body', req.body);
@@ -83,6 +97,13 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
     message: 'success!',
     imagePath: imagePath,
   });
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(`File Uploaded Successfully`);
+    }
+  });
+
 });
 
 app.get('/api/getImage/:chat_image', (req, res) => {
@@ -102,6 +123,13 @@ app.get('/api/getImage/:chat_image', (req, res) => {
   
     // Send the Base64-encoded image in the response
     res.json({ status: 1, data: { base64Image }, msg: 'Image sent successfully' });
+
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(`Image Sent Successfully`);
+      }
+    });
+
   } else {
     console.error('Image not found:', imagePath);
     res.status(404).json({ status: 0, data: {}, msg: 'Image not found' });
@@ -136,15 +164,24 @@ app.get('/api/check-auth', async (req, res) => {
       return res.json({ success: false });
     }
     // User is authenticated
-    return res.json({
-     success: true,
-     user: {
+    const user = {
       email: userRows[0].email,
       name: userRows[0].name,
       age: userRows[0].age,
       picture_url: userRows[0].picture_url,
-      },
+    };
+
+    res.json({
+      success: true,
+      user: user,
     });
+
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(`User ${user.email} logged in`);
+      }
+    });
+
   } catch (error) {
     console.error('Error checking auth status:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -191,16 +228,26 @@ app.post('/api/login', async (req, res) => {
     // Set the session ID as a cookie in the response
     res.cookie('sessionId', sessionId, { httpOnly: true });
 
-    // User is authenticated
-    return res.json({
-      success: true,
-      user: {
-        email: user.email,
-        name: user.name,
-        age: user.age,
-        picture: user.picture,
-      },
-    });
+        // User is authenticated
+    const User = {
+              email: user.email,
+              name: user.name,
+              age: user.age,
+              picture: user.picture,
+    };
+
+        res.json({
+          success: true,
+          user: User,
+        });
+    
+        // Notify WebSocket clients
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(`User ${User.email} logged in`);
+          }
+        });
+
   } catch (error) {
     console.error('Error during login:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
@@ -247,8 +294,23 @@ app.post('/api/register', async (req, res) => {
     // Set the session ID as a cookie in the response
     res.cookie('sessionId', sessionId, { httpOnly: true });
 
+    const User = {
+      email: email,
+      name: name,
+      age: age,
+      picture: picture,
+    };
+
     logger.info('Data inserted successfully');
-    res.status(200).json({ message: 'Data inserted successfully' });
+    res.status(200).json({ message: 'User Registered successfully', user: User });
+
+            // Notify WebSocket clients
+            wss.clients.forEach((client) => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(`User ${User.email} Registered successfully`);
+              }
+            });
+
   } catch (error) {
     logger.error('Error inserting data:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -261,6 +323,14 @@ app.get('/api/:email/user', async (req, res) => {
 
     const [rows] = await pool.execute('SELECT * FROM Users WHERE email = ?', [email]);
     res.status(200).json(rows);
+
+    // Notify WebSocket clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(`User : ${rows}`);
+      }
+    });
+
   } catch (error) {
     logger.error('Error fetching data', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -278,6 +348,14 @@ app.get('/api/chatTypes', async (req, res) => {
     const [chatTypes] = await pool.execute('SELECT * FROM chat_types');
 
     res.status(200).json(chatTypes);
+
+    // Notify WebSocket clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(`Chat Type:  ${chatTypes}`);
+      }
+    });
+
   } catch (error) {
     logger.error('Error fetching chat Types:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -292,9 +370,17 @@ app.get('/api/chats', async (req, res) => {
 
   try {
     // Fetch the list of chats from your database
-    const [chats] = await pool.execute('SELECT * FROM Chats');
+    const [chats] = await pool.execute(`SELECT Chats.*, chat_types.image AS type_image FROM Chats LEFT JOIN chat_types ON Chats.type = chat_types.type`);
 
     res.status(200).json(chats);
+
+    // Notify WebSocket clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(`Chats:  ${chats}`);
+      }
+    });
+
   } catch (error) {
     logger.error('Error fetching chats:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -308,7 +394,7 @@ app.post('/api/create-chat', async (req, res) => {
   res.header('Access-Control-Allow-Methods', 'POST');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   try {
-    const { chat_name, chat_image } = req.body;
+    const { chat_name, chat_image, type } = req.body;
 
     // Validate the content before inserting (check if it's not empty, etc.)
     if (!chat_name) {
@@ -316,22 +402,23 @@ app.post('/api/create-chat', async (req, res) => {
       return res.status(400).json({ error: 'Chat name is required' });
     }
 
-    // Insert the new chat into the database
-    let insertQuery = 'INSERT INTO Chats (chat_name';
-    let values = [chat_name];
-
-    if (chat_image) {
-      // Parse the base64 data URI and extract the actual base64-encoded string
-      insertQuery += ', chat_image';
-      values.push(chat_image);
+    if (!type) {
+      logger.error('Chat type is required');
+      return res.status(400).json({ error: 'Chat type is required' });
     }
 
-    insertQuery += ') VALUES (' + values.map(() => '?').join(',') + ')';
-
-    const [insertResult] = await pool.execute(insertQuery, values);
+    const [insertResult] = await pool.execute('INSERT INTO Chats (chat_name, chat_image , type) VALUES (?,?,?)',[chat_name,chat_image, type]);
 
     logger.info('Chat created successfully: ', insertResult);
     res.status(200).json({ success: true, message: `Chat created successfully: ${insertResult}` });
+
+    // Notify WebSocket clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(`Chat created successfully: ${insertResult}`);
+      }
+    });
+
   } catch (error) {
     logger.error('Error creating chat:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -364,21 +451,75 @@ app.get('/api/chats/:chat_name/questions', async (req, res) => {
    const [questions] = await pool.execute(query, [chat_name]);
 
     res.status(200).json(questions);
+
+        // Notify WebSocket clients
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(`questions by chat name: ${questions}`);
+          }
+        });
+
   } catch (error) {
     console.error('Error fetching chat questions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
+app.get('/api/users/:user_email/questions', async (req, res) => {
+  try {
+    const { user_email } = req.params;
+
+    // Fetch questions for the specified user from the database
+    const query = `
+    SELECT
+      Questions.*,
+      Users.name AS sender_name,
+      Users.age AS sender_age,
+      Users.picture AS sender_picture,
+      Chats.chat_name,
+      Chats.chat_image,
+      Chats.type
+    FROM
+      Questions
+    LEFT JOIN
+      Messages ON Questions.question_id = Messages.question_id
+    LEFT JOIN
+      Users ON Messages.sender_email = Users.email
+    LEFT JOIN
+      Chats ON Questions.chat_name = Chats.chat_name
+    WHERE
+      Users.email = ?
+    ORDER BY
+    Chats.type, Chats.chat_name, Questions.timestamp DESC;
+    `;
+
+    const [questions] = await pool.execute(query, [user_email]);
+
+    res.status(200).json(questions);
+
+            // Notify WebSocket clients
+            wss.clients.forEach((client) => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(`questions by user email: ${questions}`);
+              }
+            });
+
+  } catch (error) {
+    console.error('Error fetching user questions:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 app.post('/api/chats/:chat_name/send-question', async (req, res) => {
   try {
     const { chat_name } = req.params;
-    const { sender_email, question, question_title } = req.body;
+    const { sender_email, question_content, question_title } = req.body;
 
     // Validate the content before inserting (check if it's not empty, etc.)
-    if (!question) {
-      logger.error('question is empty');
-      return res.status(400).json({ error: 'question is empty' });
+    if (!question_content) {
+      logger.error('question content is empty');
+      return res.status(400).json({ error: 'question content is empty' });
     }
 
     if (!question_title) {
@@ -387,13 +528,40 @@ app.post('/api/chats/:chat_name/send-question', async (req, res) => {
     }
 
     // Insert the new message into the database
-    await pool.execute(
+    const response = await pool.execute(
       'INSERT INTO Questions (chat_name, sender_email, question_content, question_title) VALUES (?, ?, ?, ?)',
-      [chat_name, sender_email, question, question_title]
+      [chat_name, sender_email, question_content, question_title]
     );
 
+    const query = `
+    SELECT
+      Questions.*,
+      Users.name AS sender_name,
+      Users.age AS sender_age,
+      Users.picture AS sender_picture
+    FROM
+      Questions
+    LEFT JOIN
+      Messages ON Questions.question_id = Messages.question_id
+    LEFT JOIN
+      Users ON Messages.sender_email = Users.email
+    WHERE
+      Questions.chat_name = ?
+      AND Questions.question_id = ?;
+    `;
+
+    const [insertedRowInfo] = await pool.execute(query, [chat_name, response[0].insertId]);
+
     logger.info('question sent successfully');
-    res.status(200).json({ success: true, message: 'question sent successfully' });
+    res.status(200).json({ success: true, message: 'question sent successfully', response: response, insertedRowInfo: insertedRowInfo });
+
+            // Notify WebSocket clients
+            wss.clients.forEach((client) => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(`question sent successfully: ${insertedRowInfo}`);
+              }
+            });
+
   } catch (error) {
     logger.error('Error sending question:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -425,6 +593,14 @@ app.get('/api/chats/:chat_name/questions/:question_id/messages', async (req, res
   const [messages] = await pool.execute(query, [chat_name, question_id]);
   
     res.status(200).json(messages);
+
+                // Notify WebSocket clients
+                wss.clients.forEach((client) => {
+                  if (client.readyState === WebSocket.OPEN) {
+                    client.send(`Messages: ${messages}`);
+                  }
+                });
+
   } catch (error) {
     console.error('Error fetching chat messages:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -455,6 +631,14 @@ app.post('/api/chats/:chat_name/questions/:question_id/send-message', async (req
 
     logger.info('Message sent successfully');
     res.status(200).json({ success: true, message: 'Message sent successfully' });
+
+                // Notify WebSocket clients
+                wss.clients.forEach((client) => {
+                  if (client.readyState === WebSocket.OPEN) {
+                    client.send(`Message sent successfully. message content: ${message_content}`);
+                  }
+                });
+
   } catch (error) {
     logger.error('Error sending message:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -541,22 +725,6 @@ app.put('/api/messages/:message_id/user/:user_email/dislikes', async (req, res) 
   }
 });
 
-
-app.put('/api/messages/:message_id/dislikes', async (req, res) => {
-  try {
-    const { message_id } = req.params;
-
-    // Increment the dislikes count by 1
-    const response = await pool.execute('UPDATE Messages SET dislikes = dislikes + 1 WHERE message_id = ?', [message_id]);
-
-    logger.info('disLikes updated successfully');
-    res.status(200).json({ success: true, message: 'disLikes updated successfully', response: response });
-  } catch (error) {
-    logger.error('Error updating dislikes:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 app.post('/api/sign-out', async (req, res) => {
   // Set CORS headers
   res.header('Access-Control-Allow-Origin', 'http://localhost:19006');
@@ -575,6 +743,14 @@ app.post('/api/sign-out', async (req, res) => {
     res.clearCookie('sessionId');
 
     res.json({ success: true });
+
+                    // Notify WebSocket clients
+                    wss.clients.forEach((client) => {
+                      if (client.readyState === WebSocket.OPEN) {
+                        client.send(`user sign out successfully.`);
+                      }
+                    });
+    
   } catch (error) {
     console.error('Error signing out:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });

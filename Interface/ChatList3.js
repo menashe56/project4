@@ -12,6 +12,9 @@ const ChatList3 = ({chat, ip, }) => {
   const [chatImage, setChatImage] = useState('');
   const [loadingImage, setLoadingImage] = useState(false);
 
+  const chat_name = chat.chat_name;
+  const chat_image = chat.chat_image;
+
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -19,7 +22,7 @@ const ChatList3 = ({chat, ip, }) => {
     const fetchChat = async () => {
       try {
         //console.log('chat_image : ',chat_image)
-        const response = await axios.get(`http://${ip}/api/getImage/${chat.chat_image}`, {
+        const response = await axios.get(`http://${ip}/api/getImage/${chat_image}`, {
         });
 
         const data = response.data;
@@ -32,13 +35,13 @@ const ChatList3 = ({chat, ip, }) => {
 
     fetchChat();
 
-  }, [chat.chat_image]);
+  }, [chat_image]);
 
   useEffect(() => {
 
     const fetchChatQuestions = async () => {
       try {
-        const response = await axios.get(`http://${ip}/api/chats/${chat.chat_name}/questions`, {
+        const response = await axios.get(`http://${ip}/api/chats/${chat_name}/questions`, {
         });
 
         const questions = response.data;
@@ -51,14 +54,14 @@ const ChatList3 = ({chat, ip, }) => {
 
     fetchChatQuestions();
 
-  }, [chat.chat_name]);
+  }, [chat_name]);
 
       return (
-        <TouchableOpacity style={{flex:1}} onPress={() => navigation.navigate('ChatQuestions', { chat_name: chat.chat_name, chat_image: chatImage })}>
+        <TouchableOpacity style={{flex:1}} onPress={() => navigation.navigate('Chat', { chat: { chat_name: chat_name, chat_image: chatImage, type: chat.type, timestamp: chat.timestamp } })}>
         <View style={{marginVertical: 10, flexDirection: 'row' }}>
             <Avatar rounded source={{ uri: chatImage }} size={65} />
             <View style={{flexDirection: 'column'}}>
-            <Text style={{marginLeft: 10, color: 'black', fontWeight: '500', fontSize: 16, marginBottom: 2, }}>{chat.chat_name}</Text>
+            <Text style={{marginLeft: 10, color: 'black', fontWeight: '500', fontSize: 16, marginBottom: 2, }}>{chat_name}</Text>
             <Text style={{marginLeft: 10, color: 'black', fontSize: 14}}>{chatQuestions[0]?.question_content}</Text>
             </View>
         </View>

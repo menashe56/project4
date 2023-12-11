@@ -12,7 +12,6 @@ const ChatList2 = ({ chatType, chats, ip, }) => {
   const [dominantColor, setDominantColor] = useState(null);
   const [chatImage, setChatImage] = useState('');
   const [loadingImage, setLoadingImage] = useState(false);
-  console.log(chats)
 
   const navigation = useNavigation();
 
@@ -23,7 +22,6 @@ const ChatList2 = ({ chatType, chats, ip, }) => {
       });
 
       const data = response.data;
-      console.log(data)
       return `data:image/jpeg;base64,${data.data.base64Image}`;
     } catch (error) {
       console.error('Error fetching chat :', error.message);
@@ -31,7 +29,7 @@ const ChatList2 = ({ chatType, chats, ip, }) => {
   };
 
       return (
-        <View>
+        <View style={{ }}>
         <TouchableOpacity style={{width: 300, height: 80}}>
         <ImageBackground
         source={{ uri:  chatType.image}}
@@ -41,9 +39,9 @@ const ChatList2 = ({ chatType, chats, ip, }) => {
                     </View>
               </ImageBackground>
         </TouchableOpacity>
-        <View>
+        <View style={{}}>
         {chats.slice(0, 4).map((chat) => (
-    <View key={chat.chat_name} >
+    <View key={chat.chat_name}  style={{ width: '33.33%', boxSizing: 'border-box' }}>
         <ChatList3 chat={chat}/>
   </View>
 ))}

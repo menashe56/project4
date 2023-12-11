@@ -100,7 +100,7 @@ const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age,
         Set_user_name(name)
         Set_user_age(age)
         Set_user_picture(picture)
-        navigation.replace('Main');
+        navigation.replace('Home');
     } catch (error) {
       console.error('Error during registration:', error);
       Alert.alert('Error', `An unexpected error occurred: ${error.message || 'Unknown error'}`);
