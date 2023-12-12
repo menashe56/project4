@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 const AskQuestion = ({ Set_currentRouteName, route, navigation, ip, user_email }) => {
 
   const chat_name = route.params.chat_name;
+  console.log('a:',chat_name)
 
   const [questionTitle, setQuestionTitle] = useState('');
   const [questionContent, setQuestionContent] = useState('');
@@ -51,7 +52,7 @@ const AskQuestion = ({ Set_currentRouteName, route, navigation, ip, user_email }
       console.log({question: response.data.insertedRowInfo[0]})
       setQuestionTitle('');
       setQuestionContent('');
-      navigation.replace('Chat', {question: response.data.insertedRowInfo[0]})
+      navigation.replace('Chat', { chat: route.params.chat, question: response.data.insertedRowInfo[0]})
       console.log('question sent sucessfuly');
     } catch (error) {
       console.error('Error sending question:', error);

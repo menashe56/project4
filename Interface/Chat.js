@@ -64,28 +64,12 @@ useEffect(() => {
     setEditorValue(value);
   };
 
-    const [editorState, setEditorState] = useState(() =>
-    EditorState.createEmpty()
-  );
-
-  const onEditorStateChange = (newEditorState) => {
-    setEditorState(newEditorState);
-  };
-
-  const handleContentChange = () => {
-    const contentState = editorState.getCurrentContent();
-    const rawContentState = convertToRaw(contentState);
-    const contentHtml = stateToHTML(contentState);
-
-    console.log('Content (Raw):', rawContentState);
-    console.log('Content (HTML):', contentHtml);
-  };
-
   const [messages, setMessages] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuestionsQuery, setSearchQuestionsQuery] = useState('');
   const [filteredMessages, setFilteredMessages] = useState([]);
   const [Answered, setAnswered] = useState('');
   const [chatQuestions, setChatQuestions] = useState([]);
+  const [filteredChatQuestions, setFilteredChatQuestions] = useState([]);
   const [Question, setQuestion] = useState(route.params.question || '');
   const [questionsSearch, setQuestionsSearch] = useState('')
   const [socketConnected, setSocketConnected] = useState(false);
@@ -106,7 +90,23 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    const isQuestionInChatQuestions = chatQuestions.some((q) => q.question_id === Question.question_id);
+    const updateFilteredChatQuestions = () => {
+      if (questionsSearch.trim() === '') {
+        setFilteredChatQuestions(chatQuestions);
+      } else {
+        const filteredQuestions = chatQuestions.filter((question) =>
+          question.question_title.toLowerCase().includes(questionsSearch.toLowerCase())
+        );
+        setFilteredChatQuestions(filteredQuestions);
+      }
+    };
+  
+    updateFilteredChatQuestions();
+  }, [chatQuestions, questionsSearch]);
+  
+
+  useEffect(() => {
+    const isQuestionInChatQuestions = filteredChatQuestions.some((q) => q.question_id === Question.question_id);
 
     if (!isQuestionInChatQuestions) {
       setChatQuestions((prevChatQuestions) => [Question, ...prevChatQuestions]);
@@ -135,9 +135,9 @@ useEffect(() => {
       return () => clearInterval(intervalId); // Clean up interval on component unmount
 
     }
-  }, [navigation, Question, setMessages, setAnswered, chatQuestions]);
+  }, [navigation, Question, setMessages, setAnswered, filteredChatQuestions]);
 
-
+{/*
   useEffect(() => {
     const updateFilteredMessages = () => {
     const filteredMessages = messages.filter((message) =>
@@ -147,7 +147,7 @@ useEffect(() => {
     };
     updateFilteredMessages();
   }, [messages, searchQuery]);
-
+*/}
 
   const sendMessage = async () => {
     Keyboard.dismiss();
@@ -229,7 +229,7 @@ useEffect(() => {
             </View>
         <ScrollView style={{flex: 7.5}}>
          <View  style={{ position: 'absolute'}}>
-        {chatQuestions.map((question) => (
+        {filteredChatQuestions.map((question) => (
           <TouchableOpacity
             key={question.question_id}
             onPress={() => { setQuestion(question);}}
@@ -268,12 +268,16 @@ useEffect(() => {
         Asked {calculateTimePassed(Question.timestamp)} ago {Answered} Viewed {} times
       </Text>
       </View>
+      <View style={{flexDirection: 'row', position: 'absolute', right: 10, marginTop: 5, alignItems: 'center'}}>
+      <SimpleLineIcons name='magnifier' size={22} color="#7a7d80" />
+      <MaterialCommunityIcons name='dots-vertical' size={24} color={'#7a7d80'} style={{marginRight: 15, marginLeft: 15}}/>
       <TouchableOpacity
-          style={{ backgroundColor: 'blue', borderRadius: 10, position: 'absolute', right: 10, marginTop: 5 }}
-          onPress={user_email === '' ? () => navigation.navigate('Login') : () => navigation.navigate('AskQuestion', { chat_name: Question.chat_name })}
+          style={{ backgroundColor: 'blue', borderRadius: 10, }}
+          onPress={user_email === '' ? () => navigation.navigate('Login') : () => navigation.navigate('AskQuestion', {chat: route.params.chat, chat_name: route.params.chat.chat_name })}
         >
           <Text style={{ fontSize: 16, color: 'white', padding: 10 }}>Ask Question</Text>
         </TouchableOpacity>
+        </View>
       <View style={styles.divider} />
     </View>
     </View>
