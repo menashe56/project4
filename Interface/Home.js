@@ -13,7 +13,7 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
   Button,
-  ImageBackground,
+  ImageBackground
 } from 'react-native';
 import { AntDesign, SimpleLineIcons } from "@expo/vector-icons";
 import { Avatar, Input } from 'react-native-elements';
