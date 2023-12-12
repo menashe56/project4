@@ -17,7 +17,7 @@ const wss = new WebSocket.Server({ server });
 
 // Enable CORS for all routes
 const corsOptions = {
-  origin: 'http://localhost:19006',
+  origin: 'true',   //'http://localhost:19006'
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 204,
@@ -619,13 +619,20 @@ app.post('/api/chats/:chat_name/questions/:question_id/send-message', async (req
     }
 
     // Insert the new message into the database
-    await pool.execute(
+    const InsertResult = await pool.execute(
       'INSERT INTO Messages (chat_name, question_id, sender_email, message_content) VALUES (?, ?, ?, ?)',
       [chat_name, question_id, sender_email, message_content]
     );
 
+    const [new_message] = await pool.execute('SELECT * FROM Messages WHERE message_id = ?',[InsertResult.data.insertId])
+
+    if (!new_message || new_message.length === 0) {
+      logger.error('Error fetching newly inserted message');
+      return res.status(500).json({ error: 'Error fetching newly inserted message' });
+    }
+
     logger.info('Message sent successfully');
-    res.status(200).json({ success: true, message: 'Message sent successfully' });
+    res.status(200).json({ success: true, result: 'Message sent successfully',  InsertResponse: InsertResult, message: new_message });
 
                 // Notify WebSocket clients
                 wss.clients.forEach((client) => {

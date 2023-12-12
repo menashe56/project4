@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, } from 'react-native';
 import MainApp from './Interface/MainApp';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider } from 'react-redux';
@@ -19,11 +19,4 @@ export default function App() {
 
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: 'black',
-    paddingVertical: 10,
-  },
-});
+const styles = StyleSheet.create({});

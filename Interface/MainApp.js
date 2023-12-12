@@ -20,15 +20,14 @@ const globalScreenOptions = {
   headerShown: false,
 };
 
-const MainApp = ({Set_ip, ip, user_email}) => {
+const MainApp = ({Set_ip, user_email}) => {
 
     const state = useNavigationState((state) => state);
-    console.log(state)
+    console.log('current screen : ', state)
 
   useEffect(() => {
     Set_ip("16.16.28.132");
-    console.log(ip)
-  }, [ip]);
+  }, []);
 
   const headerComponent = user_email !== '' ? <HeaderIn /> : <HeaderOut />;
 
@@ -49,7 +48,7 @@ const MainApp = ({Set_ip, ip, user_email}) => {
                 screenOptions={globalScreenOptions}
                 initialRouteName="Home"
               >
-                <Stack.Screen name="Home" component={Home} />
+               <Stack.Screen name="Home" component={Home} />
                 <Stack.Screen name='OnSearch' component={OnSearch} />
                 <Stack.Screen name="AskQuestion" component={AskQuestion} />
                 <Stack.Screen name="Chat" component={Chat} />
@@ -83,7 +82,6 @@ const styles = StyleSheet.create({
 });
 
 const mapStateToProps = (state) => ({
-    ip: state.Other.ip, 
     user_email: state.user_profile.user_email,
   });
   
