@@ -22,8 +22,6 @@ import axios from 'axios';
 import ChatList from './ChatList';
 import { connect } from 'react-redux';
 import {Set_newChatVisible, Set_isAddChatModalVisible, Set_currentRouteName, Set_onSearch, Set_searchInput, Set_twoDimensionalFilteredChatsArray } from '../Redux/counterSlice';
-import ListMessages from '../components1/ListMessages';
-import ImageUploader from '../components1/ImageUploader';
 import ChatList2 from './ChatList2';
 import * as ImagePicker from 'expo-image-picker';
 import OnSearch from './OnSearch';
@@ -31,15 +29,10 @@ import { useNavigation, useNavigationState } from '@react-navigation/native';
 
 
 const Home = ({
-    navigation, route, ip, Set_currentRouteName, 
-    user_email, 
-    user_name, 
-    user_picture,
-    isAddChatModalVisible, Set_isAddChatModalVisible,
+    navigation, ip,
     newChatVisible, Set_newChatVisible,
     Set_onSearch, onSearch,
     Set_searchInput, searchInput,
-    Set_twoDimensionalFilteredChatsArray, twoDimensionalFilteredChatsArray
     }) => {
   const [chats, setChats] = useState([]);
   const [filteredChats, setFilteredChats] = useState([]);
@@ -47,22 +40,11 @@ const Home = ({
   const [chatTypes, setChatTypes] = useState([])
   const [chatName, setChatName] = useState('');
   const [chatImage, setChatImage] = useState(null);
-  const [loadingImage, setLoadingImage] = useState(false);
   const [type, setType] = useState('');
 
   const state = useNavigationState((state) => state);
 
-  console.log(state)
-
-  const slideAnim = useRef(new Animated.Value(0)).current;
-
-  const toggleDropdown = () => {
-    setDropdownVisible(!isDropdownVisible);
-  };
-
-  useEffect(() => {
-    Set_currentRouteName('Home')
-  }, [navigation]);
+  console.log('current screen : ', state)
 
   useEffect(() => {
     const fetchChatTypes = async () => {
@@ -111,32 +93,10 @@ const Home = ({
     }, []));
 
     };
+
     updateFilteredChats();
-    console.log('after:',chats.filter((chat) =>
-    chat.chat_name.toLowerCase().includes(searchInput.toLowerCase())
-  ).reduce((result, filteredChat) => {
-      const existingArray = result.find((arr) => arr[0]?.type === filteredChat.type);
-    
-      if (existingArray) {
-        existingArray.push(filteredChat);
-      } else {
-        result.push([filteredChat]);
-      }
-    
-      return result;
-  }, []))
 
   }, [chats, searchInput]);
-
-  const handleSearchIconPress = () => {
-    setIsSearchOpen(!isSearchOpen);
-
-    Animated.timing(slideAnim, {
-      toValue: isSearchOpen ? 1 : 0,
-      duration: isSearchOpen ? 500 : 300, // Adjust the duration based on your preference
-      useNativeDriver: false,
-    }).start();
-  };
 
   useEffect(() => {
     (async () => {
@@ -146,13 +106,6 @@ const Home = ({
       }
     })();
   }, []);
-
-  const close = () => {
-    Set_newChatVisible(false);
-    setChatName('');
-    setType('');
-    setChatImage(null);
-  };
 
   const handleChoosePhoto = (event) => {
     const selectedFile = event.target.files[0];
@@ -193,110 +146,111 @@ const Home = ({
     }
   };
 
-return (
-    <TouchableWithoutFeedback onPress={() => {if(newChatVisible){Set_newChatVisible(false); close()}}}>
-    <SafeAreaView style={styles.container}>
-    {newChatVisible &&
-            <View style={{ position: 'absolute', top: 15, left: 15, right: 0, bottom: 0, zIndex: 1, width: 180 }} onClick={(e) => e.stopPropagation()}>
+  const close = () => {
+    Set_newChatVisible(false);
+    setChatName('');
+    setType('');
+    setChatImage(null);
+  };
 
-          <View style={{ backgroundColor: 'white', borderColor: 'rgb(230, 232, 230)', borderWidth: 1, }}>
-            <View style={{backgroundColor: 'rgb(230, 232, 230)', alignItems: 'center'}}>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', color: 'blue' }}>Create new chat</Text>
-            </View>
-            <View style={{padding:10}}>
-            <Input
-          placeholder='Enter chat name'
-          value={chatName}
-          onChangeText={(text) => setChatName(text)}
-          leftIcon={<Icon name='wechat' type="antdesign" size={16} color="#333" />}
-          style={{width: 100,  fontSize: 12 }}
-        />
-                <Input
-          placeholder='Enter chat type'
-          value={type}
-          onChangeText={(text) => setType(text)}
-          leftIcon={<Icon name='group' type="MaterialIcons" size={16} color="#333" />}
-          style={{width: 100,  fontSize: 12 }}
-        />
-        <input type="file" accept="image/*" onChange={handleChoosePhoto} />
-        {loadingImage && <ActivityIndicator size="large" color="#2196F3" />}
-        {chatImage && (
-          <img src={URL.createObjectURL(chatImage)} alt="Selected" style={{ width: 30, height: 30 }} />
-        )}
-        <Button
-          disabled={!(chatName && type)}
-          title='Ask your first question'
-          onPress={() => {handleUploadPhoto(); close();}}
-          buttonStyle={styles.createButton}
-          style={{}}
-        />
-        </View>
-          </View>
-      </View>}
-            <ScrollView
-        style={{ flex: 1 }}
-      >        {chats.length === 0 && <Text style={styles.noChatsText}>No chats available</Text>}
-{!onSearch ? (
-  <View style={styles.chatsContainer}>
-    <View style={[styles.chatsList, { marginBottom: 150 }]}>
-      {chats
-        .slice(1, 4) // Get only the first three chats
-        .map((chat) => (
-          <TouchableOpacity
-            key={chat.chat_name}
-            style={{ width: 300, height: 80, marginRight: 10 }}
-            onPress={() =>
-              navigation.navigate('Chat', {chat})
-            }
-          >
-            <ChatList chat={chat} />
-          </TouchableOpacity>
-        ))}
-    </View>
-    <View style={styles.chatsList}>
-      {chatTypes.map((chatType) => (
-        <View style={{ paddingRight: 10 }}>
-          <ChatList2
-            key={chatType}
-            chatType={chatType}
-            chats={chats.filter((chat) => chat.type.includes(chatType.type))}
-          />
-        </View>
-      ))}
-    </View>
-  </View>
-) : (
-<View style={{ flex: 1, padding: 16 }}>
-  {filteredChats.map((filteredChatArray, index) => (
-    <View key={index} style={{ marginBottom: 16 }}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        {filteredChatArray.map((filteredChat) => (
-                          <TouchableOpacity key={filteredChat.chat_name} style={{ width: '48%', margin: '1%', borderRadius: 10, overflow: 'hidden', backgroundColor: 'white', elevation: 3 }} onPress={() => handleChatPress(filteredChat)}>
-                                        <View style={{ flexDirection: 'row', padding: 8 }}>
-
-            <ImageBackground source={{ uri: filteredChat.type_image }} style={{ flex: 1, justifyContent: 'flex-end' }}>
-              <View style={{ height: 30, backgroundColor: 'rgba(15, 15, 15, 0.8)', borderWidth: 2, borderColor: 'white', borderTopLeftRadius: 10, borderBottomRightRadius: 10, padding: 5 }}>
-                <Text style={{ fontSize: 16, color: 'white', fontWeight: '500', paddingLeft: 5 }}>{filteredChat.type}</Text>
+  return (
+    <TouchableWithoutFeedback onPress={() => { if (newChatVisible) { Set_newChatVisible(false); close() } }}>
+      <SafeAreaView style={styles.container}>
+        {newChatVisible &&
+          <View style={{ position: 'absolute', top: 15, left: 15, right: 0, bottom: 0, zIndex: 1, width: 180 }} onClick={(e) => e.stopPropagation()}>
+            <View style={{ backgroundColor: 'white', borderColor: 'rgb(230, 232, 230)', borderWidth: 1, }}>
+              <View style={{ backgroundColor: 'rgb(230, 232, 230)', alignItems: 'center' }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: 'blue' }}>Create new chat</Text>
               </View>
-            </ImageBackground>
-              <OnSearch filteredChat={filteredChat} />
+              <View style={{ padding: 10 }}>
+                <Input
+                  placeholder='Enter chat name'
+                  value={chatName}
+                  onChangeText={(text) => setChatName(text)}
+                  leftIcon={<Icon name='wechat' type="antdesign" size={16} color="#333" />}
+                  style={{ width: 100, fontSize: 12 }}
+                />
+                <Input
+                  placeholder='Enter chat type'
+                  value={type}
+                  onChangeText={(text) => setType(text)}
+                  leftIcon={<Icon name='group' type="MaterialIcons" size={16} color="#333" />}
+                  style={{ width: 100, fontSize: 12 }}
+                />
+                <input type="file" accept="image/*" onChange={handleChoosePhoto} />
+                {chatImage && (
+                  <img src={URL.createObjectURL(chatImage)} alt="Selected" style={{ width: 30, height: 30 }} />
+                )}
+                <Button
+                  disabled={!(chatName && type)}
+                  title='Ask your first question'
+                  onPress={() => { handleUploadPhoto(); close(); }}
+                  buttonStyle={styles.createButton}
+                  style={{}}
+                />
+              </View>
             </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  ))}
-</View>
-
-
-)}
-          <View style={{marginTop: 20, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderRightWidth: 2,borderLeftWidth: 2, borderTopWidth: 2, height: 200, width: 900, borderRightColor: 'rgb(230, 232, 230)', borderLeftColor: 'rgb(230, 232, 230)', borderTopColor: 'rgb(230, 232, 230)', marginTop: 'auto'}}>
-
-</View>
-          </ScrollView>
-    </SafeAreaView>
+          </View>}
+        <ScrollView
+          style={{ flex: 1 }}
+        >
+          {chats.length === 0 && <Text style={styles.noChatsText}>No chats available</Text>}
+          {!onSearch ? (
+            <View style={styles.chatsContainer}>
+              <View style={[styles.chatsList, { marginBottom: 150 }]}>
+                {chats
+                  .slice(1, 4) // Get only the first three chats
+                  .map((chat) => (
+                    <TouchableOpacity
+                      key={chat.chat_name}
+                      style={{ width: 300, height: 80, marginRight: 10 }}
+                      onPress={() => navigation.navigate('Chat', { chat })}
+                    >
+                      <ChatList chat={chat} />
+                    </TouchableOpacity>
+                  ))}
+              </View>
+              <View style={styles.chatsList}>
+                {chatTypes.map((chatType) => (
+                  <View style={{ paddingRight: 10 }}>
+                    <ChatList2
+                      key={chatType}
+                      chatType={chatType}
+                      chats={chats.filter((chat) => chat.type.includes(chatType.type))}
+                    />
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View style={{ flex: 1, padding: 16 }}>
+              {filteredChats.map((filteredChatArray, index) => (
+                <View key={index} style={{ marginBottom: 16 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                    {filteredChatArray.map((filteredChat) => (
+                      <TouchableOpacity key={filteredChat.chat_name} style={{ width: '48%', margin: '1%', borderRadius: 10, overflow: 'hidden', backgroundColor: 'white', elevation: 3 }} onPress={() => handleChatPress(filteredChat)}>
+                        <View style={{ flexDirection: 'row', padding: 8 }}>
+                          <ImageBackground source={{ uri: filteredChat.type_image }} style={{ flex: 1, justifyContent: 'flex-end' }}>
+                            <View style={{ height: 30, backgroundColor: 'rgba(15, 15, 15, 0.8)', borderWidth: 2, borderColor: 'white', borderTopLeftRadius: 10, borderBottomRightRadius: 10, padding: 5 }}>
+                              <Text style={{ fontSize: 16, color: 'white', fontWeight: '500', paddingLeft: 5 }}>{filteredChat.type}</Text>
+                            </View>
+                          </ImageBackground>
+                          <OnSearch filteredChat={filteredChat} />
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+          <View style={{ marginTop: 20, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderRightWidth: 2, borderLeftWidth: 2, borderTopWidth: 2, height: 200, width: 900, borderRightColor: 'rgb(230, 232, 230)', borderLeftColor: 'rgb(230, 232, 230)', borderTopColor: 'rgb(230, 232, 230)', marginTop: 'auto' }}>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </TouchableWithoutFeedback>
-  );  
+  );
+  
 };
 
 const windowHeight = Dimensions.get('window').height;
