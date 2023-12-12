@@ -16,8 +16,47 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css'; 
 import ChatLastTimestamp from './ChatLastTimestamp';
 import GetImage from './GetImage';
+import WebSocket from 'react-native-websocket';
 
 const Chat = ({route, navigation, ip, user_email, user_picture}) => {
+
+// Use useRef to persist the socket object across renders
+const socketRef = useRef(null);
+
+useEffect(() => {
+    if (!socketRef.current) {
+      const socket = new WebSocket('ws://16.16.28.132');
+
+      socket.onopen = () => {
+        console.log('WebSocket connection opened');
+        setSocketConnected(true);
+      };
+
+      socket.onmessage = (event) => {
+        // Handle incoming messages
+      const data = JSON.parse(event.data);
+      // Update state or perform actions based on the received data
+      setMessages((prevMessages) => [...prevMessages, data]);
+      console.log('Received WebSocket message:', data);
+      };
+
+      socket.onclose = () => {
+        console.log('WebSocket connection closed');
+        setSocketConnected(false);
+      };
+
+      socketRef.current = socket; // Assign the socket to the ref
+    }
+
+    return () => {
+      // Clean up the WebSocket connection on component unmount
+      if (socketRef.current && typeof socketRef.current.close === 'function') {
+        socketRef.current.close();
+      }
+    };
+  }, [setMessages, setAnswered]);
+
+
 
     const [editorValue, setEditorValue] = useState('');
 
@@ -49,6 +88,7 @@ const Chat = ({route, navigation, ip, user_email, user_picture}) => {
   const [chatQuestions, setChatQuestions] = useState([]);
   const [Question, setQuestion] = useState(route.params.question || '');
   const [questionsSearch, setQuestionsSearch] = useState('')
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const chat_name = route.params.chat.chat_name
 
@@ -66,23 +106,37 @@ const Chat = ({route, navigation, ip, user_email, user_picture}) => {
   }, []);
 
   useEffect(() => {
+    const isQuestionInChatQuestions = chatQuestions.some((q) => q.question_id === Question.question_id);
 
-    const fetchMessages = async () => {
+    if (!isQuestionInChatQuestions) {
+      setChatQuestions((prevChatQuestions) => [Question, ...prevChatQuestions]);
+    }
+
+    if (Question !== '') {
+      // Fetching messages initially
+      const fetchInitialMessages = async () => {
         try {
           const response = await axios.get(`http://${ip}/api/chats/${Question.chat_name}/questions/${Question.question_id}/messages`);
-          console.log(response)
-          setMessages(response.data);
+          setMessages(response.data.reverse());
           if (response.data.length === 0) {
             setAnswered('Still not answered');
           } else {
             setAnswered(`Answered ${calculateTimePassed(response.data[0]?.timestamp)} ago`);
-          }        } catch (error) {
+          }
+        } catch (error) {
           console.error('Error fetching messages:', error);
         }
       };
-      if(Question!= '') { fetchMessages(); }
-    
-  }, [navigation, Question]);
+
+      fetchInitialMessages();
+
+      const intervalId = setInterval(fetchInitialMessages, 1000);
+
+      return () => clearInterval(intervalId); // Clean up interval on component unmount
+
+    }
+  }, [navigation, Question, setMessages, setAnswered, chatQuestions]);
+
 
   useEffect(() => {
     const updateFilteredMessages = () => {
@@ -94,21 +148,32 @@ const Chat = ({route, navigation, ip, user_email, user_picture}) => {
     updateFilteredMessages();
   }, [messages, searchQuery]);
 
+
   const sendMessage = async () => {
     Keyboard.dismiss();
-
+  
     try {
+    
+      // Make the API call
       const response = await axios.post(`http://${ip}/api/chats/${chat_name}/questions/${Question.question_id}/send-message`, {
         sender_email: user_email,
         message_content: editorValue,
       });
-      console.log(response)
+
+      setMessages((prevMessages) => [...prevMessages, response.data.message[0]]);
+
       setEditorValue('');
-      console.log('message sent sucessfuly');
+
+      console.log('send message response: ',response)
+  
+      // If the API call is successful, update the UI with the actual response
+      //setMessages(response.data);
     } catch (error) {
       console.error('Error sending message:', error);
+      // Handle the error and possibly revert the optimistic update
     }
   };
+  
 
     const calculateTimePassed = (timestamp) => {
 
@@ -167,7 +232,7 @@ const Chat = ({route, navigation, ip, user_email, user_picture}) => {
         {chatQuestions.map((question) => (
           <TouchableOpacity
             key={question.question_id}
-            onPress={() => { setQuestion(question) }}
+            onPress={() => { setQuestion(question);}}
             style={{marginBottom: 1}}
           >
             {/* Question Card */}
@@ -189,8 +254,8 @@ const Chat = ({route, navigation, ip, user_email, user_picture}) => {
       </View>
 
       {/* Right Side - Selected Question and Messages */}
-      <View style={{ overflow: 'hidden', position: 'relative',flex: 2 }}>
-        <View style={{flex:1, backgroundColor: 'rgba(230, 232, 230,1)'}}>
+      <View style={{ overflow: 'hidden', position: 'relative',flex: 2}}>
+        <View style={{flex:1, backgroundColor: 'rgba(230, 232, 230,1)',}}>
       <View style={{ flexDirection: 'row', marginBottom: 10, flex: 1,  }}>
         <View style={{marginRight: 5, marginLeft: 10, marginTop: 5}}>
          <GetImage Image={Question.sender_picture} size={45} />
@@ -222,7 +287,7 @@ const Chat = ({route, navigation, ip, user_email, user_picture}) => {
       <Text style={{ color: 'black', fontSize: 18, marginBottom: 40, marginTop: 30, marginLeft: 10 }}>{Question.question_content}</Text>
 
       {/* Messages */}
-      {filteredMessages.map((message) => (
+      {messages.map((message) => (
         <View key={message.message_id} style={{ marginLeft: 15, marginRight: 15 }}>
           <ListMessages message={message} calculateTimePassed={calculateTimePassed} />
         </View>
@@ -234,7 +299,7 @@ const Chat = ({route, navigation, ip, user_email, user_picture}) => {
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'flex-end', marginBottom: 200, marginTop: 15, marginLeft: 15 }}>
-    <TouchableOpacity style={{ backgroundColor: 'blue', borderRadius: 10 }} onPress={() => sendMessage()}>
+    <TouchableOpacity style={{ backgroundColor: 'blue', borderRadius: 10 }} onPress={() => { sendMessage(); }}>
       <Text style={{ color: 'white', fontSize: 16, padding: 10 }}>Post Your Answer</Text>
     </TouchableOpacity>
   </View>

@@ -11,7 +11,6 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
 
     const [islikeAnddislike, setIslikeAnddislike] = useState([false, false]);
     const [isLike, isDislike] = islikeAnddislike;
-    console.log(message);
 
   const updateLikes = async () => {
     try {
@@ -92,12 +91,19 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
             style={{ color: 'black', fontSize: 14, fontWeight: 'bold', marginLeft: 5, }}>
             {message.message_sender_name}{' '}
           </Text>
-          <Text style={{ color: 'gray', fontSize: 12 }}>
+          <Text
+            style={{
+                color: 'gray',
+                fontSize: 12
+            }}
+            >
             {' '}
-            commented on {message.timestamp.substring(0, 9)}{' '}
-            {message.timestamp.substring(11, 19)}{' '}
+            commented on{' '}
+            {(message.timestamp && typeof message.timestamp === 'string')
+                ? `${message.timestamp.substring(0, 10)} ${message.timestamp.substring(11, 19)}`
+                : 'Unknown timestamp'}{' '}
             ({`${calculateTimePassed(message.timestamp)} ago`})
-          </Text>
+            </Text>
           <TouchableOpacity activeOpacity={0.5} style={{ position: 'absolute', right: 0, marginRight: 5 }}>
             <Entypo name='dots-three-horizontal' size={20} color="gray" />
           </TouchableOpacity>

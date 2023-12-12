@@ -471,26 +471,21 @@ app.get('/api/users/:user_email/questions', async (req, res) => {
 
     // Fetch questions for the specified user from the database
     const query = `
-    SELECT
-      Questions.*,
-      Users.name AS sender_name,
-      Users.age AS sender_age,
-      Users.picture AS sender_picture,
-      Chats.chat_name,
-      Chats.chat_image,
-      Chats.type
-    FROM
-      Questions
-    LEFT JOIN
-      Messages ON Questions.question_id = Messages.question_id
-    LEFT JOIN
-      Users ON Messages.sender_email = Users.email
-    LEFT JOIN
-      Chats ON Questions.chat_name = Chats.chat_name
-    WHERE
-      Users.email = ?
-    ORDER BY
-    Chats.type, Chats.chat_name, Questions.timestamp DESC;
+    SELECT DISTINCT
+    Questions.*,
+    Users.name AS sender_name,
+    Users.age AS sender_age,
+    Users.picture AS sender_picture
+  FROM
+    Questions
+  LEFT JOIN
+    Messages ON Questions.question_id = Messages.question_id
+  LEFT JOIN
+    Users ON Messages.sender_email = Users.email
+  WHERE
+    Questions.chat_name = ?
+  ORDER BY
+    Questions.timestamp DESC;  
     `;
 
     const [questions] = await pool.execute(query, [user_email]);

@@ -16,13 +16,13 @@ import {
 import { AntDesign, SimpleLineIcons } from "@expo/vector-icons";
 import { Avatar } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import CustomListItem from "../components/CustomListItem";
+import CustomListItem from "../components1/CustomListItem";
 import AddChat from './AddChat';
 import axios from 'axios';
 import { connect } from 'react-redux';
 import { Set_isAddChatModalVisible, Set_currentRouteName } from '../Redux/counterSlice';
-import ListMessages from '../components/ListMessages';
-import ImageUploader from '../components/ImageUploader';
+import ListMessages from '../components1/ListMessages';
+import ImageUploader from '../components1/ImageUploader';
 
 const Home = ({
     navigation, route, ip, Set_currentRouteName,

@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import { connect } from 'react-redux';
 import { Set_currentRouteName } from '../Redux/counterSlice';
-import ListMessages from '../components/ListMessages';
+import ListMessages from '../components1/ListMessages';
 
 const Chat = ({
   navigation, Set_currentRouteName,
