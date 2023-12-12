@@ -74,7 +74,7 @@ useEffect(() => {
   const [questionsSearch, setQuestionsSearch] = useState('')
   const [socketConnected, setSocketConnected] = useState(false);
 
-  const chat_name = route.params.chat.chat_name
+  const chat_name = route.params.chat.chat_name;
 
   useEffect(() => {
     const fetchChatQuestions = async () => {
@@ -102,15 +102,18 @@ useEffect(() => {
     };
   
     updateFilteredChatQuestions();
+  
+    // Clear the filteredChatQuestions state if the search query is empty or new data arrives
+    return () => {
+      if (questionsSearch.trim() === '' || chatQuestions.length > 0) {
+        setFilteredChatQuestions([]);
+      }
+    };
   }, [chatQuestions, questionsSearch]);
   
-
+  
+  
   useEffect(() => {
-    const isQuestionInChatQuestions = filteredChatQuestions.some((q) => q.question_id === Question.question_id);
-
-    if (!isQuestionInChatQuestions) {
-      setChatQuestions((prevChatQuestions) => [Question, ...prevChatQuestions]);
-    }
 
     if (Question !== '') {
       // Fetching messages initially
