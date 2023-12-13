@@ -1,0 +1,22 @@
+// 1) Get the dominent color from an image:
+
+        {/* import ImageColors from 'react-native-image-colors'; */}
+        {/*
+        useEffect(() => {
+            const getColorFromImage = async () => {
+            try {
+                const result = await ImageColors.getColors(chatImage, {
+                fallback: '#000000', // Default color if extraction fails
+                quality: 'high',
+                numberOfColors: 3,
+                });
+                console.log(chat_name,' : ' ,result)
+                setDominantColor(result.lightVibrant);
+            } catch (error) {
+                console.error('Error extracting colors:', error);
+            }
+            };
+            getColorFromImage();
+        }, [chatImage]);
+
+        */}

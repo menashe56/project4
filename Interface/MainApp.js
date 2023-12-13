@@ -38,10 +38,12 @@ const MainApp = ({Set_ip, user_email}) => {
           <View style={styles.header}>{headerComponent}</View>}
 
           <View style={styles.bodySection}>
-            {state?.routes[state?.routes?.length -1]?.name!=='Chat' &&
+            
+            {/* state?.routes[state?.routes?.length -1]?.name!=='Chat' &&
              <View style={styles.leftSection}>
               <LeftSection /> 
-            </View>}
+             </View> */
+            }
 
             <View style={styles.rightSection}>
               <Stack.Navigator
