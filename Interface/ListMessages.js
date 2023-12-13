@@ -12,7 +12,7 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
     const [islikeAnddislike, setIslikeAnddislike] = useState([false, false]);
     const [isLike, isDislike] = islikeAnddislike;
 
-  const updateLikes = async () => {
+  const updateLikes = async () => { //if the user like a message
     try {
       const response = await axios.put(`http://${ip}/api/messages/${message.message_id}/user/${user_email}/likes`);
       // Check if the update was successful
@@ -39,7 +39,7 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
       }
   };
 
-  const updatedisLikes = async () => {
+  const updatedisLikes = async () => { //if the user dislike a message
     try {
       const response = await axios.put(`http://${ip}/api/messages/${message.message_id}/user/${user_email}/dislikes`);
       // Check if the update was successful
@@ -55,7 +55,7 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
   };
 
   useEffect(() => {
-    const islike = async () => {
+    const islike = async () => { //check user like/dislike state
         try {
           const response = await axios.put(`http://${ip}/api/messages/${message.message_id}/user/${user_email}/islike`);
           // Check if the update was successful
@@ -72,58 +72,85 @@ const ListMessages = ({ message, calculateTimePassed, ip, user_email }) => {
           console.error('Error getting islike:', error);
         }
       };
-      if(user_email!= ''){islike();}else{ setIslikeAnddislike([false, false]) }
+      if(user_email!= '')
+      {
+        islike();
+      }else{ 
+        setIslikeAnddislike([false, false]) 
+      }
   }, [message.likes, message.dislikes]);
 
   return (
     <View style={{ flexDirection: 'row', flex: 1 }}>
+  
+      {/* User Profile Picture */}
       <TouchableOpacity activeOpacity={0.5}>
-      <GetImage Image={message.message_sender_picture} size={25}/>
+        <GetImage Image={message.message_sender_picture} size={25}/>
         {/* Arrow pointing to the user's profile picture */}
       </TouchableOpacity>
+  
+      {/* Message Container */}
       <View style={styles.container}>
-        <View
-          style={{
-            backgroundColor: 'rgba(230, 232, 230,0.5)',
-            flexDirection: 'row',alignItems: 'center',
-          }}>
-          <Text
-            style={{ color: 'black', fontSize: 14, fontWeight: 'bold', marginLeft: 5, }}>
+  
+        {/* User Info and Timestamp */}
+        <View style={{
+          backgroundColor: 'rgba(230, 232, 230,0.5)',
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}>
+          <Text style={{ color: 'black', fontSize: 14, fontWeight: 'bold', marginLeft: 5, }}>
             {message.message_sender_name}{' '}
           </Text>
-          <Text
-            style={{
-                color: 'gray',
-                fontSize: 12
-            }}
-            >
+  
+          <Text style={{
+            color: 'gray',
+            fontSize: 12
+          }}>
             {' '}
             commented on{' '}
             {(message.timestamp && typeof message.timestamp === 'string')
-                ? `${message.timestamp.substring(0, 10)} ${message.timestamp.substring(11, 19)}`
-                : 'Unknown timestamp'}{' '}
+              ? `${message.timestamp.substring(0, 10)} ${message.timestamp.substring(11, 19)}`
+              : 'Unknown timestamp'}{' '}
             ({`${calculateTimePassed(message.timestamp)} ago`})
-            </Text>
+          </Text>
+  
+          {/* More Options */}
           <TouchableOpacity activeOpacity={0.5} style={{ position: 'absolute', right: 0, marginRight: 5 }}>
             <Entypo name='dots-three-horizontal' size={20} color="gray" />
           </TouchableOpacity>
         </View>
+  
+        {/* Message Content */}
         <Text style={{ color: 'black', marginLeft: 5 }}>
           {message.message_content}
         </Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, backgroundColor: 'rgba(230, 232, 230,0.5)', width: 100, borderRadius: 20, padding: 5 }}>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={user_email!=''? updatedisLikes : () => {Alert.alert('You must log in to vote');}}>
-          {isDislike ? <AntDesign name="dislike1" size={24} style={{ marginRight: 5 }} /> : <AntDesign name="dislike2" size={24} style={{ marginRight: 5 }} />}
+  
+        {/* Like/Dislike Section */}
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginTop: 10,
+          backgroundColor: 'rgba(230, 232, 230,0.5)',
+          width: 100,
+          borderRadius: 20,
+          padding: 5
+        }}>
+          {/* Dislike */}
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={user_email !== '' ? updatedisLikes : () => { Alert.alert('You must log in to vote'); }}>
+            {isDislike ? <AntDesign name="dislike1" size={24} style={{ marginRight: 5 }} /> : <AntDesign name="dislike2" size={24} style={{ marginRight: 5 }} />}
             <Text>{message.dislikes}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={user_email!=''? updateLikes : () => {Alert.alert('You must log in to vote');}}>
-          {isLike ? <AntDesign name="like1" size={24} style={{ marginRight: 5 }} /> : <AntDesign name="like2" size={24} style={{ marginRight: 5 }} />}
+  
+          {/* Like */}
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={user_email !== '' ? updateLikes : () => { Alert.alert('You must log in to vote'); }}>
+            {isLike ? <AntDesign name="like1" size={24} style={{ marginRight: 5 }} /> : <AntDesign name="like2" size={24} style={{ marginRight: 5 }} />}
             <Text>{message.likes}</Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
   );
+  
 };
 
 const styles = StyleSheet.create({
@@ -150,8 +177,6 @@ const mapStateToProps = (state) => ({
     user_email: state.user_profile.user_email,
     user_name:  state.user_profile.user_name,
     user_picture:  state.user_profile.user_picture,
-
-    isAddChatModalVisible: state.Modals.isAddChatModalVisible,
 
     ip: state.Other.ip
   });

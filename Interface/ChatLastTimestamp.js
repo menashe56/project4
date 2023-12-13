@@ -10,7 +10,7 @@ const ChatLastTimestamp = ({question_id, chat_name, ip}) => {
 
     useEffect(() => {
 
-        const fetchChatLastTimestamp = async () => {
+        const fetchChatLastTimestamp = async () => { //get the last message timestamp in a question
             try {
               const response = await axios.get(`http://${ip}/api/chats/${chat_name}/questions/${question_id}/messages`);
               setChatLastTimestamp(response.data[response.data -1]?.timestamp);
@@ -21,11 +21,11 @@ const ChatLastTimestamp = ({question_id, chat_name, ip}) => {
 
           fetchChatLastTimestamp();
         
-      }, [question_id, chat_name]);
+    }, [question_id, chat_name]);
 
   return (
     <View>
-              <Text style={{marginLeft: 'auto', marginRight: 10, alignItems: 'flex-end', fontSize: 12, color: 'gray'}}>{chatLastTimestamp}</Text>
+       <Text style={{marginLeft: 'auto', marginRight: 10, alignItems: 'flex-end', fontSize: 12, color: 'gray'}}>{chatLastTimestamp}</Text>
     </View>
   )
 }
@@ -36,8 +36,6 @@ const mapStateToProps = (state) => ({
     user_email: state.user_profile.user_email,
     user_name:  state.user_profile.user_name,
     user_picture:  state.user_profile.user_picture,
-
-    isAddChatModalVisible: state.Modals.isAddChatModalVisible,
 
     ip: state.Other.ip
   });

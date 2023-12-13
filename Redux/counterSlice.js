@@ -28,17 +28,9 @@ const userSlice = createSlice({
 const ModalsSlice = createSlice({
   name: 'Modals',
   initialState: {
-    isAddChatModalVisible: false,
-    isToggleDropdownModalVisible: false,
     newChatVisible: false
   },
   reducers: {
-    Set_isAddChatModalVisible: (state, action) => {
-      state.isAddChatModalVisible = action.payload;
-    },
-    Set_isToggleDropdownModalVisible: (state, action) => {
-        state.isToggleDropdownModalVisible = action.payload;
-      },
       Set_newChatVisible: (state, action) => {
         state.newChatVisible = action.payload;
       },
@@ -53,7 +45,6 @@ const OtherSlice = createSlice({
     lighterColor : '',
     searchInput : '',
     onSearch : false,
-    twoDimensionalFilteredChatsArray : [[]],
     },
     reducers: {
       Set_ip: (state, action) => {
@@ -71,9 +62,6 @@ const OtherSlice = createSlice({
       Set_onSearch: (state, action) => {
         state.onSearch = action.payload;
       },
-      Set_twoDimensionalFilteredChatsArray: (state, action) => {
-        state.twoDimensionalFilteredChatsArray = action.payload;
-      },
     },
   });
 
@@ -84,9 +72,9 @@ export const {
   Set_user_age,
 } = userSlice.actions;
 
-export const { Set_isAddChatModalVisible, Set_isToggleDropdownModalVisible, Set_newChatVisible } = ModalsSlice.actions;
+export const { Set_newChatVisible } = ModalsSlice.actions;
 
-export const { Set_ip, Set_currentRouteName, Set_lighterColor, Set_searchInput, Set_onSearch, Set_twoDimensionalFilteredChatsArray } = OtherSlice.actions;
+export const { Set_ip, Set_currentRouteName, Set_lighterColor, Set_searchInput, Set_onSearch } = OtherSlice.actions;
 
 export const userProfileReducer = userSlice.reducer;
 export const ModalsReducer = ModalsSlice.reducer;
