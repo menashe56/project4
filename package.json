@@ -64,6 +64,7 @@
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
     "source-map-loader": "^4.0.1",
+    "string-tokeniser": "^1.3.2",
     "uuid": "^9.0.1",
     "web3-providers-ws": "^4.0.7",
     "websocket": "^1.0.34",
