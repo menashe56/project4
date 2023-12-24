@@ -7,13 +7,10 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Animated,
-  Modal,
-  FlatList,
   Dimensions,
   TouchableWithoutFeedback,
   Button,
-  ImageBackground,
+  ImageBackground
 } from 'react-native';
 import { AntDesign, SimpleLineIcons } from "@expo/vector-icons";
 import { Avatar, Input } from 'react-native-elements';
@@ -21,11 +18,11 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
 import ChatList from './ChatList';
 import { connect } from 'react-redux';
-import {Set_newChatVisible, Set_isAddChatModalVisible, Set_currentRouteName, Set_onSearch, Set_searchInput, Set_twoDimensionalFilteredChatsArray } from '../Redux/counterSlice';
+import {Set_newChatVisible, Set_onSearch, Set_searchInput } from '../Redux/counterSlice';
 import ChatList2 from './ChatList2';
 import * as ImagePicker from 'expo-image-picker';
 import OnSearch from './OnSearch';
-import { useNavigation, useNavigationState } from '@react-navigation/native';
+import { useNavigationState } from '@react-navigation/native';
 
 
 const Home = ({
@@ -36,14 +33,12 @@ const Home = ({
     }) => {
   const [chats, setChats] = useState([]);
   const [filteredChats, setFilteredChats] = useState([]);
-  const [isDropdownVisible, setDropdownVisible] = useState(false);
   const [chatTypes, setChatTypes] = useState([])
   const [chatName, setChatName] = useState('');
   const [chatImage, setChatImage] = useState(null);
   const [type, setType] = useState('');
 
   const state = useNavigationState((state) => state);
-
   console.log('current screen : ', state)
 
   useEffect(() => {
@@ -74,11 +69,8 @@ const Home = ({
 
   useEffect(() => {
     const updateFilteredChats = () => {
-      const filteredChats = chats.filter((chat) =>
-        chat.chat_name.toLowerCase().includes(searchInput.toLowerCase())
-      );
       
-      setFilteredChats(chats.filter((chat) =>
+      setFilteredChats(chats.filter((chat) =>      //filter the chats and split them into two dimension array by chat type
       chat.chat_name.toLowerCase().includes(searchInput.toLowerCase())
     ).reduce((result, filteredChat) => {
         const existingArray = result.find((arr) => arr[0]?.type === filteredChat.type);
@@ -125,7 +117,7 @@ const Home = ({
       const formData = new FormData();
       formData.append('photo', chatImage);
   
-      const uploadResponse = await fetch(`http://${ip}/api/upload`, {
+      const uploadResponse = await fetch(`http://${ip}/api/upload`, { //upload to server files in directory named uploads 
         method: 'POST',
         body: formData,
       });
@@ -138,15 +130,15 @@ const Home = ({
       console.log('imagePath:', imagePath);
 
       const response = await axios.post(`http://${ip}/api/create-chat`, { chat_name: chatName, chat_image: imagePath.split('uploads/')[1], type: type});
-      console.log('Create Chat Response:', response);
+      console.log('Create Chat Response:', response); // save the name of the file the database
 
-      close();
+      close(); 
     } catch (error) {
       console.error('Error handling photo upload:', error);
     }
   };
 
-  const close = () => {
+  const close = () => { // restart the inputs
     Set_newChatVisible(false);
     setChatName('');
     setType('');
@@ -212,9 +204,8 @@ const Home = ({
               </View>
               <View style={styles.chatsList}>
                 {chatTypes.map((chatType) => (
-                  <View style={{ paddingRight: 10 }}>
+                  <View key={chatType.type} style={{ paddingRight: 10 }}>
                     <ChatList2
-                      key={chatType}
                       chatType={chatType}
                       chats={chats.filter((chat) => chat.type.includes(chatType.type))}
                     />
@@ -230,11 +221,6 @@ const Home = ({
                     {filteredChatArray.map((filteredChat) => (
                       <TouchableOpacity key={filteredChat.chat_name} style={{ width: '48%', margin: '1%', borderRadius: 10, overflow: 'hidden', backgroundColor: 'white', elevation: 3 }} onPress={() => handleChatPress(filteredChat)}>
                         <View style={{ flexDirection: 'row', padding: 8 }}>
-                          <ImageBackground source={{ uri: filteredChat.type_image }} style={{ flex: 1, justifyContent: 'flex-end' }}>
-                            <View style={{ height: 30, backgroundColor: 'rgba(15, 15, 15, 0.8)', borderWidth: 2, borderColor: 'white', borderTopLeftRadius: 10, borderBottomRightRadius: 10, padding: 5 }}>
-                              <Text style={{ fontSize: 16, color: 'white', fontWeight: '500', paddingLeft: 5 }}>{filteredChat.type}</Text>
-                            </View>
-                          </ImageBackground>
                           <OnSearch filteredChat={filteredChat} />
                         </View>
                       </TouchableOpacity>
@@ -257,125 +243,44 @@ const windowHeight = Dimensions.get('window').height;
 const windowWidth = Dimensions.get('window').width;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f1f2'
-  },
-  leftContainer: {
-    flex: 1,
-    margin: 10,
-    marginLeft: 10,
-  },
-  rightContainer: {
-    flex: 3.5,
-  },
-  drawerContainer: {
-    width: 285,
-  },
-  drawerItem: {
-    alignItems: 'center',
-    paddingLeft: 20,
-    paddingTop: 25,
-  },
-  drawerIcon: {
-    marginRight: 5,
-  },
-  drawerText: {
-    color: 'gray',
-    fontSize: 20,
-  },
-  contentContainer: {
-    flex: 10,
-    backgroundColor: '#0d0c0c',
-    paddingVertical: 15,
-    borderRadius: 10,
-    borderColor: '#0d0c0c',
-    borderWidth: 1,
-    width: 285,
-    marginTop: 10,
-  },
-  chatsContainer: {
-    padding: 5,
-    justifyContent: 'center', // Center the items horizontally
-  },
-  chatsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-  chatItem: {
-    height: 280,
-    width: 200,
-    borderRadius: 15, // Add border radius for a rounded appearance
-    overflow: 'hidden', // Hide overflow content
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#171716',
-  },
-  chatItemInside: {
-    height: 185,
-    width: 170,
-    backgroundColor: 'blue',
-    borderRadius: 15, // Add border radius for a rounded appearance
-    marginBottom: 60,
-  },
-  scrollViewContent: {
-    flexGrow: 1,
-  },
-  noChatsText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: 'grey',
-  },
-  drawerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 20,
-    paddingTop: 15,
-    // You can add additional styling properties here
-  },
-  drawerIcon: {
-    marginRight: 10,
-    // You can add additional styling properties here
-  },
-
-  drawerText: {
-    color: 'gray',
-    fontSize: 20,
-    // You can add additional styling properties here
-  },
-  chatImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-    borderRadius: 10, // Adjust the value based on your preference
-    overflow: 'hidden', // This ensures that the borderRadius is applied
-    justifyContent: 'flex-end',
-  },
-});
+    container: {
+        flex: 1,
+        backgroundColor: '#f0f1f2'
+      },
+      chatsContainer: {
+        padding: 5,
+        justifyContent: 'center',
+      },
+      chatsList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+      },
+      noChatsText: {
+        textAlign: 'center',
+        marginTop: 20,
+        fontSize: 16,
+        color: 'grey',
+      },
+    });
+    
 
 const mapStateToProps = (state) => ({
     user_email: state.user_profile.user_email,
     user_name:  state.user_profile.user_name,
     user_picture:  state.user_profile.user_picture,
 
-    isAddChatModalVisible: state.Modals.isAddChatModalVisible,
     newChatVisible: state.Modals.newChatVisible,
 
     ip: state.Other.ip,
     onSearch: state.Other.onSearch,
     searchInput: state.Other.searchInput,
-    twoDimensionalFilteredChatsArray: state.Other.twoDimensionalFilteredChatsArray,
   });
   
   const mapDispatchToProps = {
-    Set_isAddChatModalVisible,
-    Set_currentRouteName,
     Set_newChatVisible,
     Set_onSearch,
     Set_searchInput,
-    Set_twoDimensionalFilteredChatsArray,
   };
 
   export default connect(mapStateToProps, mapDispatchToProps)(Home);

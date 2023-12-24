@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import {  } from '../Redux/counterSlice';
 import { Avatar } from 'react-native-elements';
 
-const ChatLastTimestamp = ({ Image, ip, user_email, size }) => {
+const GetImage = ({ Image, ip, size }) => {
 
     const [image, setImage] = useState('')
 
@@ -13,7 +13,6 @@ const ChatLastTimestamp = ({ Image, ip, user_email, size }) => {
 
         const fetchImage = async () => {
           try {
-            //console.log('chat_image : ',chat_image)
             const response = await axios.get(`http://${ip}/api/getImage/${Image}`, {
             });
     
@@ -43,12 +42,10 @@ const mapStateToProps = (state) => ({
     user_name:  state.user_profile.user_name,
     user_picture:  state.user_profile.user_picture,
 
-    isAddChatModalVisible: state.Modals.isAddChatModalVisible,
-
     ip: state.Other.ip
   });
   
   const mapDispatchToProps = {
   };
 
-  export default connect(mapStateToProps, mapDispatchToProps)(ChatLastTimestamp);
+  export default connect(mapStateToProps, mapDispatchToProps)(GetImage);

@@ -1,25 +1,35 @@
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
+const tf = require('@tensorflow/tfjs');
 
-const app = express();
-const port = 3000;
+// Generate random data for training
+const numSamples = 1000;
+const inputSize = 10;
+const outputSize = 2;
 
-// Set up multer for handling file uploads
-const storage = multer.diskStorage({
-  destination: './uploads',
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
+const inputData = tf.randomNormal([numSamples, inputSize]);
+const outputData = tf.randomNormal([numSamples, outputSize]);
+console.log(inputData)
+console.log(outputData)
 
-const upload = multer({ storage: storage });
+// Define a simple feedforward neural network
+const model = tf.sequential();
+model.add(tf.layers.dense({ units: 128, activation: 'relu', inputShape: [inputSize] }));
+model.add(tf.layers.dense({ units: outputSize, activation: 'softmax' }));
 
-// Handle POST requests to '/upload'
-app.post('/upload', upload.single('image'), (req, res) => {
-  res.send('Image uploaded successfully!');
-});
+// Compile the model
+model.compile({ optimizer: 'adam', loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
 
-app.listen(port,'0.0.0.0', () => {
-  console.log(`Server is running on port ${port}`);
-});
+
+// Train the model
+model.fit(inputData, outputData, { epochs: 5 })
+  .then(info => {
+    console.log('Training complete:', info);
+  })
+  .catch(error => {
+    console.error('Training failed:', error);
+  });
+
+  // Perform inference
+const newInputData = tf.randomNormal([1, inputSize]);
+console.log(newInputData)
+const predictions = model.predict(newInputData);
+predictions.print();

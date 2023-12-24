@@ -6,34 +6,9 @@ import { connect } from 'react-redux';
 import { Set_user_email, Set_user_name, Set_user_age, Set_user_picture  } from '../Redux/counterSlice';
 
 const Login = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Set_user_picture  }) => {
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  useEffect(() => {
-    // Check if the user is already authenticated on component mount
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const response = await fetch(`http://${ip}/api/check-auth`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // User is logged in, navigate to Home screen
-        navigation.replace('Home');
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-    }
-  };
 
   const signIn = async () => {
     try {
@@ -47,11 +22,11 @@ const Login = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Se
           credentials: 'include',
         });
 
-              // Check the HTTP status code
-      if (!response.ok) {
-        console.error('Login failed:', response.statusText);
-        return;
-      }
+        // Check the HTTP status code
+        if (!response.ok) {
+            console.error('Login failed:', response.statusText);
+            return;
+        }
 
         const data = await response.json();
         if (data.success) {
@@ -73,35 +48,31 @@ const Login = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age, Se
   };
 
   return (
+    // Main container with keyboard avoiding behavior
     <KeyboardAvoidingView behavior="padding" style={styles.container}>
+      {/* Status bar */}
       <StatusBar style="light" />
+      
+      {/* Signal logo */}
       <Image source={require('../assets/images/signal.png')} style={{ width: 200, height: 200 }} />
+  
+      {/* Input container for email and password */}
       <View style={styles.inputContainer}>
-        <Input
-          placeholder="Email"
-          autoFocus
-          type="email"
-          value={email}
-          onChangeText={(text) => setEmail(text)}
-        />
-        <Input
-          placeholder="Password"
-          secureTextEntry
-          type="password"
-          value={password}
-          onChangeText={(text) => setPassword(text)}
-          onSubmitEditing={signIn}
-        />
+        {/* Email input */}
+        <Input placeholder="Email" autoFocus type="email" value={email} onChangeText={(text) => setEmail(text)} />
+        
+        {/* Password input */}
+        <Input placeholder="Password" secureTextEntry type="password" value={password} onChangeText={(text) => setPassword(text)} onSubmitEditing={signIn} />
       </View>
+  
+      {/* Login button */}
       <Button containerStyle={styles.button} onPress={signIn} title="Login" />
-      <Button
-        containerStyle={styles.button}
-        onPress={() => navigation.navigate('Register')}
-        type="outline"
-        title="Register"
-      />
+  
+      {/* Register button */}
+      <Button containerStyle={styles.button} onPress={() => navigation.navigate('Register')} type="outline" title="Register" />
     </KeyboardAvoidingView>
-  );
+  );  
+  
 };
 
 const styles = StyleSheet.create({
@@ -127,9 +98,9 @@ const mapStateToProps = (state) => ({
   
   const mapDispatchToProps = {
     Set_user_email,
-Set_user_name,
-Set_user_picture,
-Set_user_age,
+    Set_user_name,
+    Set_user_picture,
+    Set_user_age,
 };
   
 

@@ -438,10 +438,8 @@ app.get('/api/chats/:chat_name/questions', async (req, res) => {
       Users.picture AS sender_picture
     FROM
       Questions
-    LEFT JOIN
-      Messages ON Questions.question_id = Messages.question_id
-    LEFT JOIN
-      Users ON Messages.sender_email = Users.email
+    JOIN
+      Users ON Questions.sender_email = Users.email
     WHERE
       Questions.chat_name = ?
     ORDER BY
@@ -478,10 +476,8 @@ app.get('/api/users/:user_email/questions', async (req, res) => {
     Users.picture AS sender_picture
   FROM
     Questions
-  LEFT JOIN
-    Messages ON Questions.question_id = Messages.question_id
-  LEFT JOIN
-    Users ON Messages.sender_email = Users.email
+  JOIN
+    Users ON Questions.sender_email = Users.email
   WHERE
     Questions.chat_name = ?
   ORDER BY
@@ -796,6 +792,8 @@ app.post('/api/insert', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
 
 server.listen(3000, '0.0.0.0', (error) => {
   if (error) {

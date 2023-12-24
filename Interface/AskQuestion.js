@@ -1,16 +1,13 @@
 import React, { useEffect, useState ,useRef} from 'react';
 import { connect } from 'react-redux';
-import { StyleSheet, Text, View, TextInput, Button, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, Image, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Set_currentRouteName } from '../Redux/counterSlice';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css'; 
 import axios from 'axios';
-import * as ImagePicker from 'expo-image-picker';
+import { Input } from 'react-native-elements';
 
-const AskQuestion = ({ Set_currentRouteName, route, navigation, ip, user_email }) => {
+const AskQuestion = ({ route, navigation, ip, user_email }) => {
 
   const chat_name = route.params.chat_name;
-  console.log('a:',chat_name)
 
   const [questionTitle, setQuestionTitle] = useState('');
   const [questionContent, setQuestionContent] = useState('');
@@ -19,16 +16,21 @@ const AskQuestion = ({ Set_currentRouteName, route, navigation, ip, user_email }
   const inputImageRef = useRef(null);
   const inputVideoRef = useRef(null);
 
-  const [editorValue, setEditorValue] = useState('');
-
-  const handleEditorChange = (value) => {
-    setEditorValue(value);
+  const sendMessage = async () => {
+    try {
+      const response = await axios.post(`http://${ip}/api/chats/${chat_name}/send-question`, {
+        sender_email: user_email,
+        question_content: questionContent,
+        question_title: questionTitle,
+      });
+      setQuestionTitle('');
+      setQuestionContent('');
+      navigation.replace('Chat', { chat: route.params.chat, question: response.data.insertedRowInfo[0]})
+      console.log('question sent sucessfuly');
+    } catch (error) {
+      console.error('Error sending question:', error);
+    }
   };
-
-
-  useEffect(() => {
-    Set_currentRouteName('AskQuestion');
-  }, []);
 
   const onFileChange = (event) => {
     const files = event.target.files;
@@ -42,23 +44,6 @@ const AskQuestion = ({ Set_currentRouteName, route, navigation, ip, user_email }
     setVideos([...videos, ...newVideos]);
   };
 
-  const sendMessage = async () => {
-    try {
-      const response = await axios.post(`http://${ip}/api/chats/${chat_name}/send-question`, {
-        sender_email: user_email,
-        question_content: questionContent,
-        question_title: questionTitle,
-      });
-      console.log({question: response.data.insertedRowInfo[0]})
-      setQuestionTitle('');
-      setQuestionContent('');
-      navigation.replace('Chat', { chat: route.params.chat, question: response.data.insertedRowInfo[0]})
-      console.log('question sent sucessfuly');
-    } catch (error) {
-      console.error('Error sending question:', error);
-    }
-  };
-
   const close = () => {
     setQuestionTitle('');
     setQuestionContent('');
@@ -67,7 +52,10 @@ const AskQuestion = ({ Set_currentRouteName, route, navigation, ip, user_email }
 
   return (
     <ScrollView style={styles.container}>
+      {/* Title */}
       <Text style={styles.title}>Ask a Public Question</Text>
+  
+      {/* Question Title */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Title</Text>
         <Text style={styles.description}>
@@ -81,49 +69,37 @@ const AskQuestion = ({ Set_currentRouteName, route, navigation, ip, user_email }
           onChangeText={(text) => setQuestionTitle(text)}
         />
       </View>
+  
+      {/* Question Content */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Question content</Text>
         <Text style={styles.description}>
           Introduce the problem and expand on what you put in the title.
         </Text>
-      <ReactQuill
-      style={{marginBottom: 50, flex:1}}
-        value={questionContent}
-        onChange={(text) => setQuestionContent(text)}
-        placeholder="e.g. How do I use loops in Python?"
-      />
-        <View style={styles.fileInputContainer}>
-          <View style={styles.uploadButtonContainer}>
-            <Button title='Upload Images' onPress={() => inputImageRef.current.click()} />
-            <input type="file" accept="image/*" onChange={onFileChange} multiple style={styles.hiddenInput} ref={inputImageRef} />
-          </View>
-          <View style={styles.uploadButtonContainer}>
-            <Button title='Upload Videos' onPress={() => inputVideoRef.current.click()} />
-            <input type="file" accept="video/*" onChange={onFileChange} multiple style={styles.hiddenInput} ref={inputVideoRef} />
-          </View>
-        </View>
-        <View style={styles.uploadedFilesContainer}>
-          {images.map((image, index) => (
-            <Image key={index} source={{ uri: URL.createObjectURL(image) }} style={styles.uploadedFile} />
-          ))}
-          {videos.map((video, index) => (
-            <video key={index} controls style={styles.uploadedFile}>
-              <source src={URL.createObjectURL(video)} type={video.type} />
-            </video>
-          ))}
-        </View>
-        <View style={{flexDirection: 'row'}}>
-        <TouchableOpacity style={{ backgroundColor: 'blue', borderRadius: 10, marginRight: 10}} onPress={() => sendMessage()}>
-            <Text style={{color: 'white', fontSize: 16, padding: 10}}>Post your question</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={{backgroundColor: 'white', borderRadius: 10,borderColor: 'red', borderWidth: 1}} onPress={() => close()}>
-            <Text style={{fontSize: 16, color: 'red', padding : 10,}}>discard draft</Text>
-        </TouchableOpacity>
+        <TextInput
+          value={questionContent}
+          onChangeText={(text) => setQuestionContent(text)}
+          placeholder="e.g. How do I use loops in Python?"
+          placeholderTextColor={'gray'}
+          style={styles.textInput}
+        />
+  
+        {/* Post and Discard Buttons */}
+        <View style={{ flexDirection: 'row' }}>
+          {/* Post Button */}
+          <TouchableOpacity style={{ backgroundColor: 'blue', borderRadius: 10, marginRight: 10 }} onPress={() => sendMessage()}>
+            <Text style={{ color: 'white', fontSize: 16, padding: 10 }}>Post your question</Text>
+          </TouchableOpacity>
+  
+          {/* Discard Button */}
+          <TouchableOpacity style={{ backgroundColor: 'white', borderRadius: 10, borderColor: 'red', borderWidth: 1 }} onPress={() => close()}>
+            <Text style={{ fontSize: 16, color: 'red', padding: 10 }}>discard draft</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
   );
+  
 };
 
 const styles = StyleSheet.create({

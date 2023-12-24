@@ -12,8 +12,6 @@ const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age,
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [age, setAge] = useState('');
-  const [picture, setpicture] = useState(null);
-  const [loadingImage, setLoadingImage] = useState(false);
   const [photo, setPhoto] = React.useState(null);
 
   useEffect(() => {
@@ -38,20 +36,12 @@ const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age,
   
       if (!result.cancelled && result.assets.length > 0) {
         // Access the URI from the first asset in the array
-        const selectedImage = result.assets[0];
+        const selectedImage = result.assets[0].uri;
         console.log('Setting Image:', selectedImage);
-        setpicture(selectedImage);
+        setPhoto(selectedImage);
       }
     } catch (error) {
       console.error('Error picking image:', error);
-    }
-  };
-
-  const handleChoosePhoto = (event) => {
-    const selectedFile = event.target.files[0];
-
-    if (selectedFile) {
-      setPhoto(selectedFile);
     }
   };
 
@@ -116,15 +106,14 @@ const Register = ({ navigation, ip, Set_user_email, Set_user_name, Set_user_age,
         <Input placeholder='Email' autoFocus type="email" value={email} onChangeText={text => setEmail(text)} />
         <Input placeholder='Password' secureTextEntry type="password" value={password} onChangeText={text => setPassword(text)} />
         <Input placeholder='Age' type="number" value={age} onChangeText={text => setAge(text)} />
-        <input type="file" accept="image/*" onChange={handleChoosePhoto} />
-        {photo && (
-          <>
-          <img src={URL.createObjectURL(photo)} alt="Selected" style={{ width: 30, height: 30 }} />
-          <button onClick={handleUploadPhoto}>Upload Photo</button>
-          </>
+        <Button title='photo profile' onPress={handleImagePick} />
+        {photo && ( 
+        <View>
+            <Image source={{ uri: photo }} style={{ width: 30, height: 30 }} />
+        </View>
         )}
       </View>
-      <Button containerStyle={styles.button} raised title='Register' onPress={register} />
+      <Button containerStyle={styles.button} raised title='Register' onPress={handleUploadPhoto} />
     </KeyboardAvoidingView>
   );
 };
@@ -152,10 +141,10 @@ const mapStateToProps = (state) => ({
   });
   
   const mapDispatchToProps = {
-      Set_user_email,
-  Set_user_name,
-  Set_user_picture,
-  Set_user_age,
+    Set_user_email,
+    Set_user_name,
+    Set_user_picture,
+    Set_user_age,
   };
   
 
