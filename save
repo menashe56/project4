@@ -20,3 +20,7 @@
         }, [chatImage]);
 
         */}
+
+                // Load the vocabulary using require
+                const vocabulary = require('./server/model/vocabulary.json');
+                console.log(vocabulary);
