@@ -30,7 +30,7 @@ function padSequences(sequences, maxLen, padding = 'post') {
 }
   
 // Path to your IMDB dataset file
-const imdbDatasetPath = '../assets/data/small Dataset.csv';
+const imdbDatasetPath = '../assets/data/1.csv';
 
 // Load IMDB dataset
 loadCSV(imdbDatasetPath, (result) => {
